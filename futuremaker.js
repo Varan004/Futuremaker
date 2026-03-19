@@ -362,6 +362,7 @@ document.addEventListener('click', function(e) {
    const registerForm = document.getElementById('registerForm');
    if (!registerForm) return;
 
+   const whatsappNumber = (registerForm.dataset.whatsapp || '').trim();
    const programField = registerForm.querySelector('select[name="program"]');
    const paymentMethodFields = registerForm.querySelectorAll('input[name="paymentMethod"]');
    const cardFields = document.getElementById('cardFields');
@@ -387,6 +388,57 @@ document.addEventListener('click', function(e) {
          minimumFractionDigits: 2,
          maximumFractionDigits: 2
       });
+   }
+
+   function getProgramLabel() {
+      if (!programField) return '';
+      const selectedOption = programField.options[programField.selectedIndex];
+      return selectedOption ? selectedOption.text : '';
+   }
+
+   function getPaymentMethodLabel(method) {
+      if (method === 'card') return 'Card Payment';
+      if (method === 'bank') return 'Direct Bank Transfer';
+      return 'Pay Later (At Office)';
+   }
+
+   function sendRegistrationToWhatsapp(method, amount) {
+      if (!whatsappNumber) return;
+
+      const firstName = registerForm.firstName ? registerForm.firstName.value.trim() : '';
+      const lastName = registerForm.lastName ? registerForm.lastName.value.trim() : '';
+      const fullName = [firstName, lastName].filter(Boolean).join(' ');
+      const email = registerForm.email ? registerForm.email.value.trim() : '';
+      const phone = registerForm.phone ? registerForm.phone.value.trim() : '';
+      const city = registerForm.city ? registerForm.city.value.trim() : '';
+      const goal = registerForm.goal ? registerForm.goal.value.trim() : '';
+      const transferReference = registerForm.transferReference ? registerForm.transferReference.value.trim() : '';
+      const payerName = registerForm.payerName ? registerForm.payerName.value.trim() : '';
+
+      const lines = [
+         'New FutureMakers registration payment',
+         '',
+         'Name: ' + fullName,
+         'Email: ' + email,
+         'Phone: ' + phone,
+         'City: ' + city,
+         'Program: ' + getProgramLabel(),
+         'Career Goal: ' + goal,
+         'Payment Method: ' + getPaymentMethodLabel(method),
+         'Amount: ' + formatLkr(amount)
+      ];
+
+      if (method === 'bank') {
+         lines.push('Transfer Reference: ' + transferReference);
+         lines.push('Payer Name: ' + payerName);
+      }
+
+      if (method === 'card') {
+         lines.push('Status: Customer says website payment is completed.');
+      }
+
+      const whatsappUrl = 'https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(lines.join('\n'));
+      window.open(whatsappUrl, '_blank');
    }
 
    function updateFee() {
@@ -469,8 +521,9 @@ document.addEventListener('click', function(e) {
       if (!registerForm.reportValidity()) return;
 
       const selected = registerForm.querySelector('input[name="paymentMethod"]:checked');
-      const isCard = selected && selected.value === 'card';
-      const isBank = selected && selected.value === 'bank';
+      const paymentMethod = selected ? selected.value : 'cash';
+      const isCard = paymentMethod === 'card';
+      const isBank = paymentMethod === 'bank';
 
       if (isCard && !isCardDataValid()) {
          alert('Please enter valid card details to continue payment.');
@@ -478,12 +531,14 @@ document.addEventListener('click', function(e) {
       }
 
       const amount = feeMap[programField.value] || 0;
+      sendRegistrationToWhatsapp(paymentMethod, amount);
+
       if (isCard) {
-         alert('Payment successful. Amount paid: ' + formatLkr(amount));
+         alert('Payment successful. Your details have been prepared in WhatsApp for confirmation. Amount paid: ' + formatLkr(amount));
       } else if (isBank) {
-         alert('Bank transfer details submitted. Please send your payment receipt and account number to our WhatsApp number: +94 70 568 1574. We will verify and confirm your registration. Amount: ' + formatLkr(amount));
+         alert('Bank transfer details submitted. A WhatsApp message has been prepared for confirmation. Please attach your payment receipt before sending. Amount: ' + formatLkr(amount));
       } else {
-         alert('Registration submitted. Please pay at office. Amount due: ' + formatLkr(amount));
+         alert('Registration submitted. A WhatsApp message has been prepared for confirmation. Amount due: ' + formatLkr(amount));
       }
 
       registerForm.reset();
