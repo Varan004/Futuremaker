@@ -34,6 +34,13 @@ body {
     border-bottom: 1px solid var(--bg-header-border);
 }
 
+.header .container {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1.25rem;
+}
+
 .container {
     width: min(1100px, 92%);
     margin: 0 auto;
@@ -70,6 +77,7 @@ body {
 
 .navbar {
     width: min(760px, 100%);
+    justify-self: end;
 }
 
 .navbar ul {
@@ -77,7 +85,7 @@ body {
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
     gap: 0.45rem;
 }
 
@@ -118,14 +126,15 @@ body {
 }
 
 @media (max-width: 860px) {
-    .container {
-        flex-direction: column;
-        align-items: flex-start;
+    .header .container {
+        grid-template-columns: 1fr;
+        justify-items: stretch;
         padding: 0.75rem 0;
     }
 
     .navbar {
         width: 100%;
+        justify-self: stretch;
     }
 
     .navbar ul {
