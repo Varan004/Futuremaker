@@ -42,7 +42,7 @@ body {
 }
 
 .container {
-    width: min(1100px, 92%);
+    width: min(1150px, 92%);
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -76,7 +76,7 @@ body {
 }
 
 .navbar {
-    width: min(760px, 100%);
+    width: min(1000px, 100%);
     justify-self: end;
     transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
 }
