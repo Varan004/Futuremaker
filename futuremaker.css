@@ -78,6 +78,49 @@ body {
 .navbar {
     width: min(760px, 100%);
     justify-self: end;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+}
+
+.menu-toggle {
+    display: none;
+    justify-self: end;
+    width: 52px;
+    height: 52px;
+    padding: 0;
+    border: 1px solid rgba(143, 107, 255, 0.42);
+    border-radius: 14px;
+    background: rgba(143, 107, 255, 0.12);
+    box-shadow: 0 12px 30px rgba(8, 5, 22, 0.28);
+    cursor: pointer;
+    transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+}
+
+.menu-toggle:hover {
+    background: rgba(143, 107, 255, 0.22);
+    border-color: rgba(255, 63, 196, 0.55);
+    transform: translateY(-1px);
+}
+
+.menu-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    margin: 5px auto;
+    border-radius: 999px;
+    background: var(--text-main);
+    transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.menu-toggle[aria-expanded="true"] span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.menu-toggle[aria-expanded="true"] span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle[aria-expanded="true"] span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
 }
 
 .navbar ul {
@@ -127,20 +170,41 @@ body {
 
 @media (max-width: 860px) {
     .header .container {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr) auto;
         justify-items: stretch;
         padding: 0.75rem 0;
     }
 
+    .menu-toggle {
+        display: inline-block;
+    }
+
     .navbar {
         width: 100%;
+        grid-column: 1 / -1;
         justify-self: stretch;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        max-height: 0;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .navbar.is-open {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        max-height: 420px;
+        pointer-events: auto;
+        margin-top: 0.35rem;
     }
 
     .navbar ul {
         width: 100%;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 0.42rem;
+        padding-top: 0.35rem;
     }
 
     .navbar a {
@@ -154,6 +218,17 @@ body {
 
     .logo-text {
         font-size: 1rem;
+    }
+}
+
+@media (min-width: 861px) {
+    .navbar {
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        max-height: none !important;
+        overflow: visible;
+        pointer-events: auto;
     }
 }
 

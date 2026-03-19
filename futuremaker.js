@@ -10,6 +10,38 @@ window.addEventListener('load', () => {
    }, 1000);
 });
 
+const menuToggle = document.querySelector('.menu-toggle');
+const siteNavigation = document.getElementById('siteNavigation');
+
+if (menuToggle && siteNavigation) {
+   const closeNavigation = () => {
+      siteNavigation.classList.remove('is-open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuToggle.setAttribute('aria-label', 'Open navigation menu');
+   };
+
+   menuToggle.addEventListener('click', () => {
+      const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+      siteNavigation.classList.toggle('is-open', !isOpen);
+      menuToggle.setAttribute('aria-expanded', String(!isOpen));
+      menuToggle.setAttribute('aria-label', !isOpen ? 'Close navigation menu' : 'Open navigation menu');
+   });
+
+   siteNavigation.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+         if (window.innerWidth <= 860) {
+            closeNavigation();
+         }
+      });
+   });
+
+   window.addEventListener('resize', () => {
+      if (window.innerWidth > 860) {
+         closeNavigation();
+      }
+   });
+}
+
 // Menu Item Click Handler
 const menuItems = document.querySelectorAll('.menu-item');
 const contentSections = document.querySelectorAll('.content-section');
