@@ -47,6 +47,7 @@ body {
 .logo {
     display: inline-flex;
     align-items: center;
+    gap: 0.8rem;
     text-decoration: none;
 }
 
@@ -55,6 +56,16 @@ body {
     width: auto;
     display: block;
     border-radius: 8px;
+}
+
+.logo-text {
+    font-family: "Syne", sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-main);
+    text-shadow: 0 0 18px rgba(255, 63, 196, 0.22);
 }
 
 .navbar ul {
@@ -120,6 +131,10 @@ body {
 
     .logo img {
         height: 46px;
+    }
+
+    .logo-text {
+        font-size: 1rem;
     }
 }
 
