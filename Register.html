@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="img /FUTUMAKERS LOGO.jpg">
+    <title> FUTUREMAKERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="futuremaker.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="Home.html" class="logo">
+                <img src="img /FUTUMAKERS LOGO.jpg" alt="Logo">
+            </a>
+            <nav class="navbar">
+                <ul>
+                   <li><a href="Home.html">Home</a></li>
+                    <li><a href="Aboutus.html">About Us</a></li>
+                    <li><a href="Service.html">Services</a></li>
+                    <li><a href="Opportunity.html">Opportunity</a></li>
+                    <li><a href="Testimonial.html">Testimonial</a></li>
+                    <li><a href="Contact.html">Contact</a></li>
+                    <li><a href="Register.html" class="active">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="register-page">
+        <section class="register-stage">
+            <div class="register-shell">
+                <aside class="register-intro">
+                    <p class="register-kicker">FutureMakers Enrollment</p>
+                    <h1>Register and start your growth journey</h1>
+                    <p>Join our community to access career guidance, practical workshops, and future-ready support designed for real outcomes.</p>
+
+                    <div class="register-points">
+                        <article>
+                            <h3>Practical Training</h3>
+                            <p>Learn directly through hands-on programs and focused sessions.</p>
+                        </article>
+                        <article>
+                            <h3>Mentor Support</h3>
+                            <p>Get one-to-one guidance to stay consistent and confident.</p>
+                        </article>
+                        <article>
+                            <h3>Career Direction</h3>
+                            <p>Build a clear roadmap based on your strengths and goals.</p>
+                        </article>
+                    </div>
+
+                    <div class="register-contact-links">
+                        <div class="contact-item">
+                            <div class="contact-icon">📑</div>
+                            <div class="contact-details">
+                                <h4>Google form register</h4>
+                                <a href="https://forms.gle/MtCMRyeg19yMC2ed6" class="apply-now-btn" target="_blank">Register here</a>
+                            </div>
+                        </div>
+                    </div>
+
+                </aside>
+
+                <section class="register-form-wrap" aria-label="Registration form">
+                    <p class="register-form-title">Create Your Registration</p>
+                    <form class="register-form" id="registerForm" action="#" method="post">
+                        <div class="register-grid">
+                            <label>
+                                First Name
+                                <input type="text" name="firstName" placeholder="First name" required>
+                            </label>
+                            <label>
+                                Last Name
+                                <input type="text" name="lastName" placeholder="Last name" required>
+                            </label>
+                        </div>
+
+                        <div class="register-grid">
+                            <label>
+                                Email
+                                <input type="email" name="email" placeholder="you@example.com" required>
+                            </label>
+                            <label>
+                                Phone
+                                <input type="tel" name="phone" placeholder="Phone number" required>
+                            </label>
+                        </div>
+
+                        <div class="register-grid">
+                            <label>
+                                Program
+                                <select name="program" required>
+                                    <option value="" disabled selected>Select a program</option>
+                                    <option value="orientation">Orientation Course</option>
+                                    <option value="future-ai">Future in AI</option>
+                                    <option value="career-guidance">Career Guidance</option>
+                                </select>
+                            </label>
+                            <label>
+                                City
+                                <input type="text" name="city" placeholder="Your city" required>
+                            </label>
+                        </div>
+
+                        <label>
+                            Career Goal
+                            <textarea name="goal" rows="4" placeholder="Tell us what you want to achieve" required></textarea>
+                        </label>
+
+                        <section class="payment-box" aria-label="Website payment">
+                            <h2>Payment Method</h2>
+                            <p class="payment-note">Choose card checkout, direct bank transfer, or pay later.</p>
+
+                            <div class="payment-methods" role="radiogroup" aria-label="Payment methods">
+                                <label class="payment-method-item">
+                                    <input type="radio" name="paymentMethod" value="card" checked>
+                                    <span>Card Payment (Website)</span>
+                                </label>
+                                <label class="payment-method-item">
+                                    <input type="radio" name="paymentMethod" value="cash">
+                                    <span>Pay Later (At Office)</span>
+                                </label>
+                                <label class="payment-method-item">
+                                    <input type="radio" name="paymentMethod" value="bank">
+                                    <span>Direct Bank Transfer</span>
+                                </label>
+                            </div>
+
+                            <div class="payment-amount">
+                                <span>Program Fee</span>
+                                <strong id="programFee">LKR 0.00</strong>
+                            </div>
+
+                            <div class="card-fields" id="cardFields">
+                                <label>
+                                    Card Number
+                                    <input type="text" name="cardNumber" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456">
+                                </label>
+                                <label>
+                                    Card Holder Name
+                                    <input type="text" name="cardName" autocomplete="cc-name" placeholder="Name on card">
+                                </label>
+                                <div class="register-grid">
+                                    <label>
+                                        Expiry Month
+                                        <input type="text" name="expMonth" inputmode="numeric" autocomplete="cc-exp-month" placeholder="MM">
+                                    </label>
+                                    <label>
+                                        Expiry Year
+                                        <input type="text" name="expYear" inputmode="numeric" autocomplete="cc-exp-year" placeholder="YYYY">
+                                    </label>
+                                </div>
+                                <label>
+                                    CVV
+                                    <input type="password" name="cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="123">
+                                </label>
+                            </div>
+
+                            <div class="payment-bank-fields hidden" id="bankFields">
+                                <div class="bank-details-card" aria-live="polite">
+                                    <p><span>Bank</span><strong id="bankName">Your Bank Name</strong></p>
+                                    <p><span>Account Name</span><strong id="accountName">Your Account Name</strong></p>
+                                    <p><span>Account Number</span><strong id="accountNumber">0000000000</strong></p>
+                                    <p><span>Branch</span><strong id="branchName">Main Branch</strong></p>
+                                </div>
+                                <label>
+                                    Transfer Reference / Receipt No
+                                    <input type="text" name="transferReference" placeholder="Enter transfer reference">
+                                </label>
+                                <label>
+                                    Payer Name (Bank Slip)
+                                    <input type="text" name="payerName" placeholder="Name used for transfer">
+                                </label>
+                                <p class="payment-help">After payment, send your receipt and account number to our WhatsApp number: +94 70 568 1574 so we can verify and approve your registration.</p>
+                            </div>
+                        </section>
+
+                        <button type="submit" class="register-submit-btn">Pay & Complete Registration</button>
+                    </form>
+                </section>
+            </div>
+        </section>
+
+        
+        
+    </main>
+
+    <script src="futuremaker.js"></script>
+</body>
+</html>

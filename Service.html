@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="img /FUTUMAKERS LOGO.jpg">
+    <title> FUTUREMAKERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="futuremaker.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <a href="Home.html" class="logo">
+                <img src="img /FUTUMAKERS LOGO.jpg" alt="Logo">
+            </a>
+            <nav class="navbar">
+                <ul>
+                   <li><a href="Home.html">Home</a></li>
+                    <li><a href="Aboutus.html">About Us</a></li>
+                    <li><a href="Service.html" class="active">Services</a></li>
+                    <li><a href="Opportunity.html">Opportunity</a></li>
+                    <li><a href="Testimonial.html">Testimonial</a></li>
+                    <li><a href="Contact.html">Contact</a></li>
+                    <li><a href="Register.html">Register</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="services-page">
+        <section class="services-section">
+            <div class="services-layout">
+                <aside class="services-intro">
+                    <p class="services-kicker">Futuremakers Programs</p>
+                    <h2 class="section-title">Services Built for Learning and Earning</h2>
+                    <p class="section-subtitle">Choose from practical courses, expert mentorship, and reliable support to grow your skills with confidence.</p>
+
+                    <div class="services-meta">
+                        <div class="meta-item">
+                            <span>02</span>
+                            <p>Premium Courses</p>
+                        </div>
+                        <div class="meta-item">
+                            <span>24/7</span>
+                            <p>Guided Support</p>
+                        </div>
+                        <div class="meta-item">
+                            <span>100%</span>
+                            <p>Growth Focused</p>
+                        </div>
+                    </div>
+
+                    <a class="services-register-link" href="Register.html">Register Today</a>
+                </aside>
+
+                <div class="tabs-container">
+                    <div class="tab-buttons" role="tablist" aria-label="Services categories">
+                        <button class="tab-btn active" onclick="switchTab(this, 'development')">Courses</button>
+                        <button class="tab-btn" onclick="switchTab(this, 'support')">Support</button>
+                    </div>
+
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="development">
+                            <div class="services-list">
+                                <div class="service-row">
+                                    <div class="service-row-icon">
+                                        <img src="img /bigstock-Man-Hand-Writing-Orientation-W-118845377-300x225.jpg" alt="Orientation course">
+                                    </div>
+                                    <div class="service-row-content">
+                                        <h4>Orientation Course</h4>
+                                        <p>Learn how to start and grow your own online income with our comprehensive orientation course.</p>
+                                        <p>We provide this course with our Linked Able campus.</p>
+                                        <p class="service-fee"><span>Student Fee</span> Rs 1000.00</p>
+                                        <a class="enroll-btn" href="Register.html">Enroll Now</a>
+                                    </div>
+                                    <div class="service-row-arrow">→</div>
+                                </div>
+                                <div class="service-row">
+                                    <div class="service-row-icon">
+                                        <img src="img /Purple and White Illustrated AI & Future of Work Podcast Cover.jpg" alt="Future in AI">
+                                    </div>
+                                    <div class="service-row-content">
+                                        <h4>Future in AI</h4>
+                                        <p>A futuristic AI workshop with practical topics like AI in daily life, careers, and future-ready skills.</p>
+                                        <p class="service-fee"><span>Registration Fee</span> Rs 1500.00</p>
+                                        <a class="enroll-btn" href="Register.html">Enroll Now</a>
+                                    </div>
+                                    <div class="service-row-arrow">→</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane" id="support">
+                            <div class="services-list">
+                                <div class="service-row">
+                                    <div class="service-row-icon">
+                                        <img src="img /247-support.jpg" alt="24/7 Support">
+                                    </div>
+                                    <div class="service-row-content">
+                                        <h4>24/7 Support</h4>
+                                        <p>Round-the-clock technical assistance and maintenance to keep your systems running smoothly.</p>
+                                    </div>
+                                    <div class="service-row-arrow">→</div>
+                                </div>
+                                <div class="service-row">
+                                    <div class="service-row-icon">
+                                        <img src="img /training-center.jpg" alt="Training">
+                                    </div>
+                                    <div class="service-row-content">
+                                        <h4>Training & Workshops</h4>
+                                        <p>Empower your team with expert-led training sessions tailored to your technology stack.</p>
+                                    </div>
+                                    <div class="service-row-arrow">→</div>
+                                </div>
+                                <div class="service-row">
+                                    <div class="service-row-icon">
+                                        <img src="img /managed-service.jpg" alt="Managed Services">
+                                    </div>
+                                    <div class="service-row-content">
+                                        <h4>Managed Services</h4>
+                                        <p>End-to-end management of your digital infrastructure for worry-free operations.</p>
+                                    </div>
+                                    <div class="service-row-arrow">→</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="futuremaker.js"></script>
+</body>
+</html>
