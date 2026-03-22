@@ -1155,6 +1155,54 @@ app.get('/api/team/dashboard', requireTeamAuth, async (req, res) => {
   });
 });
 
+app.put('/api/team/profile', requireTeamAuth, async (req, res) => {
+  const fullName = sanitizeText(req.body.fullName);
+  const email = sanitizeText(req.body.email).toLowerCase();
+  const role = sanitizeText(req.body.role);
+  const department = sanitizeText(req.body.department);
+  const focusArea = sanitizeText(req.body.focusArea);
+  const welcomeNote = sanitizeText(req.body.welcomeNote);
+
+  if (!isNonEmptyString(fullName) || fullName.length < 3) {
+    return res.status(400).json({ error: 'Full name must be at least 3 characters.' });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'A valid email address is required.' });
+  }
+
+  const teamUsername = sanitizeText(req.teamUser.username).toLowerCase();
+  const db = await getDb();
+  const emailConflict = await db.collection('teamUsers').findOne(
+    { email, username: { $ne: teamUsername } }
+  );
+
+  if (emailConflict) {
+    return res.status(400).json({ error: 'This email is already registered by another user.' });
+  }
+
+  const updates = { fullName, email };
+  if (isNonEmptyString(role)) updates.role = role;
+  if (isNonEmptyString(department)) updates.department = department;
+  if (isNonEmptyString(focusArea)) updates.focusArea = focusArea;
+  if (isNonEmptyString(welcomeNote)) updates.welcomeNote = welcomeNote;
+
+  const updatedUser = await db.collection('teamUsers').findOneAndUpdate(
+    { username: teamUsername },
+    { $set: updates },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'Team user not found.' });
+  }
+
+  return res.json({
+    message: 'Profile updated successfully.',
+    user: sanitizeTeamUser(updatedUser)
+  });
+});
+
 app.put('/api/team/payment-details', requireTeamAuth, async (req, res) => {
   const incomingDetails = normalizePaymentDetails(req.body || {});
 

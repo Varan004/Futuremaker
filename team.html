@@ -223,6 +223,41 @@
 
                 <section class="team-panel">
                     <div class="admin-section-heading">
+                        <h2>Edit Profile</h2>
+                        <span>Update your personal details</span>
+                    </div>
+                    <form class="team-login-form" id="teamEditProfileForm">
+                        <label class="admin-field">
+                            Full Name
+                            <input type="text" name="fullName" autocomplete="name" placeholder="Your full name" required>
+                        </label>
+                        <label class="admin-field">
+                            Email
+                            <input type="email" name="email" autocomplete="email" placeholder="you@example.com" required>
+                        </label>
+                        <label class="admin-field">
+                            Role
+                            <input type="text" name="role" placeholder="e.g. Team Member">
+                        </label>
+                        <label class="admin-field">
+                            Department
+                            <input type="text" name="department" placeholder="e.g. Operations">
+                        </label>
+                        <label class="admin-field">
+                            Focus Area
+                            <input type="text" name="focusArea" placeholder="e.g. Lead follow-up">
+                        </label>
+                        <label class="admin-field">
+                            Welcome Note
+                            <input type="text" name="welcomeNote" placeholder="A short note shown on your dashboard">
+                        </label>
+                        <button type="submit" class="contact-submit-btn admin-login-btn">Save Profile</button>
+                    </form>
+                    <p class="admin-status" id="teamProfileStatus" aria-live="polite">Update your profile details.</p>
+                </section>
+
+                <section class="team-panel">
+                    <div class="admin-section-heading">
                         <h2>Bank Details</h2>
                         <span>Used on registration page</span>
                     </div>

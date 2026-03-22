@@ -11,6 +11,8 @@
    const registerForm = document.getElementById('teamRegisterForm');
    const loginStatusElement = document.getElementById('teamLoginStatus');
    const teamStatusElement = document.getElementById('teamStatus');
+   const editProfileForm = document.getElementById('teamEditProfileForm');
+   const profileStatusElement = document.getElementById('teamProfileStatus');
    const paymentDetailsForm = document.getElementById('teamPaymentDetailsForm');
    const paymentStatusElement = document.getElementById('teamPaymentStatus');
    const logoutButton = document.getElementById('teamLogoutButton');
@@ -19,7 +21,7 @@
    const activityList = document.getElementById('teamActivityList');
    let authMode = 'login';
 
-   if (!authCard || !dashboard || !authTitle || !authSubtitle || !authLoginTab || !authRegisterTab || !authForgotTab || !loginForm || !forgotForm || !registerForm || !loginStatusElement || !teamStatusElement || !paymentDetailsForm || !paymentStatusElement || !taskList || !permissionList || !activityList) {
+   if (!authCard || !dashboard || !authTitle || !authSubtitle || !authLoginTab || !authRegisterTab || !authForgotTab || !loginForm || !forgotForm || !registerForm || !loginStatusElement || !teamStatusElement || !editProfileForm || !profileStatusElement || !paymentDetailsForm || !paymentStatusElement || !taskList || !permissionList || !activityList) {
       return;
    }
 
@@ -226,6 +228,15 @@
       });
    }
 
+   function populateEditProfileForm(user) {
+      editProfileForm.fullName.value = (user && user.fullName) || '';
+      editProfileForm.email.value = (user && user.email) || '';
+      editProfileForm.role.value = (user && user.role) || '';
+      editProfileForm.department.value = (user && user.department) || '';
+      editProfileForm.focusArea.value = (user && user.focusArea) || '';
+      editProfileForm.welcomeNote.value = (user && user.welcomeNote) || '';
+   }
+
    function populatePaymentDetailsForm(details) {
       paymentDetailsForm.bankName.value = (details && details.bankName) || '';
       paymentDetailsForm.accountName.value = (details && details.accountName) || '';
@@ -256,6 +267,7 @@
       setText('teamLatestContact', formatDate(workspace.latestContact));
       setText('teamLatestRegistration', formatDate(workspace.latestRegistration));
 
+      populateEditProfileForm(user);
       populatePaymentDetailsForm(user.paymentDetails || {});
 
       renderTasks(Array.isArray(user.tasks) ? user.tasks : []);
@@ -490,6 +502,51 @@
          }
       });
    }
+
+   editProfileForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      if (!editProfileForm.reportValidity()) {
+         return;
+      }
+
+      const submitButton = editProfileForm.querySelector('button[type="submit"]');
+      if (submitButton) {
+         submitButton.disabled = true;
+      }
+
+      setStateMessage(profileStatusElement, 'Saving profile...', false);
+
+      try {
+         const result = await requestJson('/api/team/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               fullName: editProfileForm.fullName.value.trim(),
+               email: editProfileForm.email.value.trim(),
+               role: editProfileForm.role.value.trim(),
+               department: editProfileForm.department.value.trim(),
+               focusArea: editProfileForm.focusArea.value.trim(),
+               welcomeNote: editProfileForm.welcomeNote.value.trim()
+            })
+         }, 'Unable to update profile.');
+
+         populateEditProfileForm(result.user || {});
+         setText('teamFullName', result.user && result.user.fullName);
+         setText('teamRole', result.user && result.user.role);
+         setText('teamDepartment', result.user && result.user.department);
+         setText('teamFocusArea', result.user && result.user.focusArea);
+         setText('teamWelcomeTitle', `Welcome, ${(result.user && result.user.fullName) || 'Team User'}`);
+         setText('teamWelcomeNote', result.user && result.user.welcomeNote);
+         setStateMessage(profileStatusElement, result.message || 'Profile updated successfully.', false);
+      } catch (error) {
+         setStateMessage(profileStatusElement, error.message || 'Unable to update profile.', true);
+      } finally {
+         if (submitButton) {
+            submitButton.disabled = false;
+         }
+      }
+   });
 
    paymentDetailsForm.addEventListener('submit', async function (event) {
       event.preventDefault();
