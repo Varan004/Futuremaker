@@ -8,6 +8,9 @@
    const contactTableBody = document.getElementById('contactTableBody');
    const registrationTableBody = document.getElementById('registrationTableBody');
    const teamUserTableBody = document.getElementById('teamUserTableBody');
+   const teamUsersSection = document.getElementById('adminTeamUsersSection');
+   const teamUsersPanel = document.getElementById('adminTeamUsersPanel');
+   const teamUsersToggleBtn = document.getElementById('adminTeamUsersToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
@@ -113,6 +116,20 @@
       cell.textContent = message;
       row.appendChild(cell);
       tableBody.appendChild(row);
+   }
+
+   function setTeamUsersPanelState(isOpen) {
+      if (!teamUsersPanel || !teamUsersToggleBtn) {
+         return;
+      }
+
+      teamUsersPanel.hidden = !isOpen;
+      teamUsersToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      teamUsersToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (teamUsersSection) {
+         teamUsersSection.classList.toggle('is-collapsed', !isOpen);
+      }
    }
 
    function renderContacts(items) {
@@ -275,6 +292,14 @@
             if (teamUserTableBody) renderEmptyRow(teamUserTableBody, 7, 'Login required.');
          }
       });
+   }
+
+   if (teamUsersToggleBtn) {
+      teamUsersToggleBtn.addEventListener('click', function () {
+         const isOpen = teamUsersToggleBtn.getAttribute('aria-expanded') === 'true';
+         setTeamUsersPanelState(!isOpen);
+      });
+      setTeamUsersPanelState(true);
    }
 
    // ─── Team User Management ─────────────────────────────────────

@@ -146,31 +146,36 @@
                     </div>
                 </section>
 
-                <section class="admin-table-section">
-                    <div class="admin-section-heading">
-                        <h2>Team Users</h2>
-                        <span id="adminTeamUserMeta">0 members</span>
+                <section class="admin-table-section" id="adminTeamUsersSection">
+                    <div class="admin-section-heading admin-collapsible-heading">
+                        <div class="admin-heading-main">
+                            <h2>Team Users</h2>
+                            <span id="adminTeamUserMeta">0 members</span>
+                        </div>
+                        <button type="button" class="admin-collapse-toggle" id="adminTeamUsersToggleBtn" aria-expanded="true" aria-controls="adminTeamUsersPanel">Collapse</button>
                     </div>
-                    <div style="margin-bottom:1rem;">
-                        <button type="button" class="admin-outline-btn" id="adminAddTeamUserBtn">+ Add Team User</button>
-                    </div>
-                    <div class="admin-table-wrap">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Role</th>
-                                    <th>Department</th>
-                                    <th>Email</th>
-                                    <th>Focus Area</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="teamUserTableBody">
-                                <tr><td colspan="7">Loading...</td></tr>
-                            </tbody>
-                        </table>
+                    <div id="adminTeamUsersPanel" class="admin-collapsible-panel">
+                        <div style="margin-bottom:1rem;">
+                            <button type="button" class="admin-outline-btn" id="adminAddTeamUserBtn">+ Add Team User</button>
+                        </div>
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Full Name</th>
+                                        <th>Role</th>
+                                        <th>Department</th>
+                                        <th>Email</th>
+                                        <th>Focus Area</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="teamUserTableBody">
+                                    <tr><td colspan="7">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </section>
