@@ -7,6 +7,14 @@
    const statusElement = document.getElementById('adminStatus');
    const contactTableBody = document.getElementById('contactTableBody');
    const registrationTableBody = document.getElementById('registrationTableBody');
+   const teamUserTableBody = document.getElementById('teamUserTableBody');
+
+   let teamUserModal = null;
+   let teamUserResetModal = null;
+   let teamUserDeleteModal = null;
+   let currentEditUsername = null;
+   let currentResetUsername = null;
+   let currentDeleteUsername = null;
 
    if (!authCard || !dashboard || !loginForm || !loginStatusElement || !statusElement || !contactTableBody || !registrationTableBody) {
       return;
@@ -185,6 +193,8 @@
             showAuthCard();
          }
       }
+
+      await loadTeamUsers();
    }
 
    async function checkAdminSession() {
@@ -262,9 +272,298 @@
             setStatus('Login required to view admin data.', true);
             renderEmptyRow(contactTableBody, 7, 'Login required.');
             renderEmptyRow(registrationTableBody, 13, 'Login required.');
+            if (teamUserTableBody) renderEmptyRow(teamUserTableBody, 7, 'Login required.');
          }
       });
    }
 
+   // ─── Team User Management ─────────────────────────────────────
+
+   function initTeamModals() {
+      if (typeof bootstrap === 'undefined') return;
+      const tuEl = document.getElementById('teamUserModal');
+      const resetEl = document.getElementById('teamUserResetModal');
+      const delEl = document.getElementById('teamUserDeleteModal');
+      if (tuEl) teamUserModal = new bootstrap.Modal(tuEl);
+      if (resetEl) teamUserResetModal = new bootstrap.Modal(resetEl);
+      if (delEl) teamUserDeleteModal = new bootstrap.Modal(delEl);
+   }
+
+   function renderTeamUsers(users) {
+      const meta = document.getElementById('adminTeamUserMeta');
+      if (meta) meta.textContent = `${users.length} member${users.length === 1 ? '' : 's'}`;
+      setSummaryText('adminTeamUserCount', users.length);
+      if (!teamUserTableBody) return;
+
+      if (!users.length) {
+         renderEmptyRow(teamUserTableBody, 7, 'No team users found.');
+         return;
+      }
+
+      teamUserTableBody.innerHTML = '';
+      users.forEach(function (user) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(user.username));
+         row.appendChild(createCell(user.fullName));
+         row.appendChild(createCell(user.role));
+         row.appendChild(createCell(user.department));
+         row.appendChild(createCell(user.email));
+         row.appendChild(createCell(user.focusArea));
+
+         const actCell = document.createElement('td');
+         actCell.style.whiteSpace = 'nowrap';
+
+         const editBtn = document.createElement('button');
+         editBtn.type = 'button';
+         editBtn.textContent = 'Edit';
+         editBtn.className = 'admin-outline-btn';
+         editBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         editBtn.addEventListener('click', function () { openEditTeamUserModal(user); });
+
+         const resetBtn = document.createElement('button');
+         resetBtn.type = 'button';
+         resetBtn.textContent = 'Reset PW';
+         resetBtn.className = 'admin-outline-btn';
+         resetBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         resetBtn.addEventListener('click', function () { openResetPasswordModal(user.username); });
+
+         const delBtn = document.createElement('button');
+         delBtn.type = 'button';
+         delBtn.textContent = 'Delete';
+         delBtn.className = 'admin-outline-btn admin-delete-btn';
+         delBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         delBtn.addEventListener('click', function () { openDeleteUserModal(user.username); });
+
+         actCell.appendChild(editBtn);
+         actCell.appendChild(resetBtn);
+         actCell.appendChild(delBtn);
+         row.appendChild(actCell);
+         teamUserTableBody.appendChild(row);
+      });
+   }
+
+   async function loadTeamUsers() {
+      if (!teamUserTableBody) return;
+      try {
+         const result = await requestJson('/api/admin/team-users', {}, 'Unable to load team users.');
+         renderTeamUsers(result.items || []);
+      } catch (error) {
+         renderEmptyRow(teamUserTableBody, 7, error.message || 'Unable to load team users.');
+      }
+   }
+
+   function clearTUFormStatus() {
+      const el = document.getElementById('adminTeamUserFormStatus');
+      if (el) { el.textContent = ''; el.className = 'admin-status'; }
+   }
+
+   function setTUFormStatus(msg, isError) {
+      const el = document.getElementById('adminTeamUserFormStatus');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.toggle('is-error', Boolean(isError));
+      el.classList.toggle('is-success', !isError);
+   }
+
+   function openAddTeamUserModal() {
+      currentEditUsername = null;
+      const form = document.getElementById('adminTeamUserForm');
+      const label = document.getElementById('teamUserModalLabel');
+      const pwWrap = document.getElementById('adminTUPasswordWrap');
+      const unInput = document.getElementById('adminTUUsername');
+      if (form) form.reset();
+      if (label) label.textContent = 'Add Team User';
+      if (pwWrap) pwWrap.style.display = '';
+      if (unInput) unInput.removeAttribute('disabled');
+      ['adminTUAssignedLeads', 'adminTUPendingActions', 'adminTUCompletedFollowUps'].forEach(function (id) {
+         const el = document.getElementById(id);
+         if (el) el.value = '0';
+      });
+      const priEl = document.getElementById('adminTUPriorityLevel');
+      if (priEl) priEl.value = 'Normal';
+      clearTUFormStatus();
+      if (teamUserModal) teamUserModal.show();
+   }
+
+   function openEditTeamUserModal(user) {
+      currentEditUsername = user.username;
+      const form = document.getElementById('adminTeamUserForm');
+      const label = document.getElementById('teamUserModalLabel');
+      const pwWrap = document.getElementById('adminTUPasswordWrap');
+      const unInput = document.getElementById('adminTUUsername');
+      if (form) form.reset();
+      if (label) label.textContent = 'Edit: ' + user.username;
+      if (pwWrap) pwWrap.style.display = 'none';
+      if (unInput) { unInput.value = user.username; unInput.setAttribute('disabled', 'disabled'); }
+      clearTUFormStatus();
+
+      const fieldMap = {
+         adminTUFullName: user.fullName,
+         adminTUEmail: user.email,
+         adminTURole: user.role,
+         adminTUDepartment: user.department,
+         adminTUFocusArea: user.focusArea,
+         adminTUWelcomeNote: user.welcomeNote
+      };
+      Object.keys(fieldMap).forEach(function (id) {
+         const el = document.getElementById(id);
+         if (el) el.value = fieldMap[id] || '';
+      });
+
+      const m = user.metrics || {};
+      const metricMap = {
+         adminTUAssignedLeads: m.assignedLeads !== undefined ? m.assignedLeads : 0,
+         adminTUPendingActions: m.pendingActions !== undefined ? m.pendingActions : 0,
+         adminTUCompletedFollowUps: m.completedFollowUps !== undefined ? m.completedFollowUps : 0,
+         adminTUPriorityLevel: m.priorityLevel || 'Normal'
+      };
+      Object.keys(metricMap).forEach(function (id) {
+         const el = document.getElementById(id);
+         if (el) el.value = metricMap[id];
+      });
+
+      const permEl = document.getElementById('adminTUPermissions');
+      if (permEl) permEl.value = Array.isArray(user.permissions) ? user.permissions.join('\n') : '';
+
+      if (teamUserModal) teamUserModal.show();
+   }
+
+   function openResetPasswordModal(username) {
+      currentResetUsername = username;
+      const label = document.getElementById('adminResetUsernameLabel');
+      const pwInput = document.getElementById('adminResetNewPassword');
+      const statusEl = document.getElementById('adminResetPasswordStatus');
+      if (label) label.textContent = username;
+      if (pwInput) pwInput.value = '';
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'admin-status'; }
+      if (teamUserResetModal) teamUserResetModal.show();
+   }
+
+   function openDeleteUserModal(username) {
+      currentDeleteUsername = username;
+      const label = document.getElementById('adminDeleteUsernameLabel');
+      const statusEl = document.getElementById('adminDeleteUserStatus');
+      if (label) label.textContent = username;
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'admin-status'; }
+      if (teamUserDeleteModal) teamUserDeleteModal.show();
+   }
+
+   const addTeamUserBtn = document.getElementById('adminAddTeamUserBtn');
+   if (addTeamUserBtn) {
+      addTeamUserBtn.addEventListener('click', openAddTeamUserModal);
+   }
+
+   const saveTeamUserBtn = document.getElementById('adminTeamUserSaveBtn');
+   if (saveTeamUserBtn) {
+      saveTeamUserBtn.addEventListener('click', async function () {
+         saveTeamUserBtn.disabled = true;
+         setTUFormStatus('Saving…', false);
+
+         const isEdit = Boolean(currentEditUsername);
+         function val(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+         }
+
+         const body = {
+            fullName: val('adminTUFullName'),
+            email: val('adminTUEmail'),
+            role: val('adminTURole'),
+            department: val('adminTUDepartment'),
+            focusArea: val('adminTUFocusArea'),
+            welcomeNote: val('adminTUWelcomeNote'),
+            metrics: {
+               assignedLeads: Number(val('adminTUAssignedLeads')) || 0,
+               pendingActions: Number(val('adminTUPendingActions')) || 0,
+               completedFollowUps: Number(val('adminTUCompletedFollowUps')) || 0,
+               priorityLevel: val('adminTUPriorityLevel') || 'Normal'
+            },
+            permissions: val('adminTUPermissions')
+               .split('\n')
+               .map(function (s) { return s.trim(); })
+               .filter(Boolean)
+         };
+
+         if (!isEdit) {
+            body.username = val('adminTUUsername');
+            body.password = val('adminTUPassword');
+         }
+
+         try {
+            const url = isEdit
+               ? '/api/admin/team-users/' + currentEditUsername
+               : '/api/admin/team-users';
+            const method = isEdit ? 'PUT' : 'POST';
+            await requestJson(url, {
+               method: method,
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(body)
+            }, isEdit ? 'Unable to update team user.' : 'Unable to create team user.');
+
+            if (teamUserModal) teamUserModal.hide();
+            await loadTeamUsers();
+         } catch (error) {
+            setTUFormStatus(error.message || 'Unable to save team user.', true);
+         } finally {
+            saveTeamUserBtn.disabled = false;
+         }
+      });
+   }
+
+   const resetPWSaveBtn = document.getElementById('adminResetPasswordSaveBtn');
+   if (resetPWSaveBtn) {
+      resetPWSaveBtn.addEventListener('click', async function () {
+         resetPWSaveBtn.disabled = true;
+         const pwInput = document.getElementById('adminResetNewPassword');
+         const statusEl = document.getElementById('adminResetPasswordStatus');
+         const newPassword = pwInput ? pwInput.value.trim() : '';
+
+         if (!newPassword || newPassword.length < 8) {
+            if (statusEl) { statusEl.textContent = 'Password must be at least 8 characters.'; statusEl.className = 'admin-status is-error'; }
+            resetPWSaveBtn.disabled = false;
+            return;
+         }
+
+         if (statusEl) { statusEl.textContent = 'Resetting…'; statusEl.className = 'admin-status'; }
+
+         try {
+            await requestJson('/api/admin/team-users/' + currentResetUsername + '/reset-password', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ newPassword: newPassword })
+            }, 'Unable to reset password.');
+
+            if (teamUserResetModal) teamUserResetModal.hide();
+         } catch (error) {
+            if (statusEl) { statusEl.textContent = error.message || 'Unable to reset password.'; statusEl.className = 'admin-status is-error'; }
+         } finally {
+            resetPWSaveBtn.disabled = false;
+         }
+      });
+   }
+
+   const deleteConfirmBtn = document.getElementById('adminDeleteUserConfirmBtn');
+   if (deleteConfirmBtn) {
+      deleteConfirmBtn.addEventListener('click', async function () {
+         deleteConfirmBtn.disabled = true;
+         const statusEl = document.getElementById('adminDeleteUserStatus');
+         if (statusEl) { statusEl.textContent = 'Deleting…'; statusEl.className = 'admin-status'; }
+
+         try {
+            await requestJson('/api/admin/team-users/' + currentDeleteUsername, {
+               method: 'DELETE'
+            }, 'Unable to delete team user.');
+
+            if (teamUserDeleteModal) teamUserDeleteModal.hide();
+            await loadTeamUsers();
+         } catch (error) {
+            if (statusEl) { statusEl.textContent = error.message || 'Unable to delete team user.'; statusEl.className = 'admin-status is-error'; }
+         } finally {
+            deleteConfirmBtn.disabled = false;
+         }
+      });
+   }
+
+   initTeamModals();
    checkAdminSession();
 })();

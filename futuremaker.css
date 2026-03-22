@@ -3648,7 +3648,7 @@ main {
 
 .admin-summary-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 1rem;
 }
 
@@ -4270,5 +4270,97 @@ main {
     .register-submit-btn {
         width: 100%;
         text-align: center;
+    }
+}
+
+/* ═══════════════════════════════════════
+   Admin – Team User Management
+═══════════════════════════════════════ */
+.admin-modal-content {
+    background: rgba(10, 8, 28, 0.98) !important;
+    color: #e2d9f3 !important;
+    border: 1px solid rgba(139, 92, 246, 0.38) !important;
+    border-radius: 20px !important;
+}
+
+.admin-modal-header {
+    border-bottom: 1px solid rgba(139, 92, 246, 0.28) !important;
+    padding: 1rem 1.25rem;
+}
+
+.admin-modal-header .modal-title {
+    font-family: "Syne", sans-serif;
+    color: #ffffff;
+    font-size: 1.15rem;
+}
+
+.admin-modal-footer {
+    border-top: 1px solid rgba(139, 92, 246, 0.28) !important;
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.admin-modal-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.72rem;
+}
+
+.admin-field--full {
+    grid-column: 1 / -1;
+}
+
+.admin-field textarea {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    padding: 0.7rem 0.85rem;
+    font-family: "Outfit", sans-serif;
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-field textarea:focus {
+    border-color: rgba(143, 107, 255, 0.85);
+    box-shadow: 0 0 0 3px rgba(143, 107, 255, 0.16);
+}
+
+.admin-modal-kicker {
+    margin: 1.1rem 0 0.4rem;
+    color: #ff7dc8;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.admin-delete-btn {
+    color: #f87171 !important;
+    border-color: rgba(248, 113, 113, 0.55) !important;
+}
+
+.admin-delete-btn:hover {
+    background: rgba(248, 113, 113, 0.12) !important;
+}
+
+.admin-danger-save-btn {
+    background: linear-gradient(110deg, rgba(180, 40, 40, 0.92), rgba(220, 60, 60, 0.88)) !important;
+    border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+@media (max-width: 1200px) {
+    .admin-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-modal-grid {
+        grid-template-columns: 1fr;
     }
 }

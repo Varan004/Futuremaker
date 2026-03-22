@@ -1253,6 +1253,123 @@ app.get('/api/admin/submissions', requireAdminAuth, async (_req, res) => {
   });
 });
 
+// ── Admin: Team User Management ─────────────────────────────────────────────
+
+app.get('/api/admin/team-users', requireAdminAuth, async (_req, res) => {
+  const users = await readTeamUsers();
+  return res.json({
+    items: users.map((u) => sanitizeTeamUser(u)).filter(Boolean),
+    total: users.length
+  });
+});
+
+app.post('/api/admin/team-users', requireAdminAuth, async (req, res) => {
+  const { error, user } = await createTeamUser(req.body || {});
+  if (error) return res.status(400).json({ error });
+  return res.status(201).json({
+    message: 'Team user created.',
+    user: sanitizeTeamUser(user)
+  });
+});
+
+app.put('/api/admin/team-users/:username', requireAdminAuth, async (req, res) => {
+  const username = sanitizeText(req.params.username).toLowerCase();
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  const db = await getDb();
+  const existing = await db.collection('teamUsers').findOne({ username }, { projection: { _id: 0 } });
+  if (!existing) return res.status(404).json({ error: 'Team user not found.' });
+
+  const fullName = sanitizeText(req.body.fullName);
+  const email = sanitizeText(req.body.email).toLowerCase();
+  const role = sanitizeText(req.body.role);
+  const department = sanitizeText(req.body.department);
+  const focusArea = sanitizeText(req.body.focusArea);
+  const welcomeNote = sanitizeText(req.body.welcomeNote);
+
+  if (!isNonEmptyString(fullName) || fullName.length < 3) {
+    return res.status(400).json({ error: 'Full name must be at least 3 characters.' });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({ error: 'A valid email address is required.' });
+  }
+
+  const emailConflict = await db.collection('teamUsers').findOne({ email, username: { $ne: username } });
+  if (emailConflict) {
+    return res.status(400).json({ error: 'This email is already registered by another user.' });
+  }
+
+  const updates = { fullName, email };
+  if (isNonEmptyString(role)) updates.role = role;
+  if (isNonEmptyString(department)) updates.department = department;
+  if (isNonEmptyString(focusArea)) updates.focusArea = focusArea;
+  if (isNonEmptyString(welcomeNote)) updates.welcomeNote = welcomeNote;
+
+  if (req.body.metrics && typeof req.body.metrics === 'object') {
+    const m = req.body.metrics;
+    updates.metrics = {
+      assignedLeads: Number(m.assignedLeads) || 0,
+      pendingActions: Number(m.pendingActions) || 0,
+      completedFollowUps: Number(m.completedFollowUps) || 0,
+      priorityLevel: sanitizeText(m.priorityLevel) || 'Normal'
+    };
+  }
+
+  if (Array.isArray(req.body.permissions)) {
+    updates.permissions = req.body.permissions.map((p) => sanitizeText(p)).filter(Boolean);
+  }
+
+  const updatedUser = await db.collection('teamUsers').findOneAndUpdate(
+    { username },
+    { $set: updates },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedUser) {
+    return res.status(404).json({ error: 'Team user not found.' });
+  }
+
+  return res.json({
+    message: 'Team user updated.',
+    user: sanitizeTeamUser(normalizeTeamUser(updatedUser))
+  });
+});
+
+app.delete('/api/admin/team-users/:username', requireAdminAuth, async (req, res) => {
+  const username = sanitizeText(req.params.username).toLowerCase();
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  const db = await getDb();
+  const result = await db.collection('teamUsers').deleteOne({ username });
+  if (!result.deletedCount) {
+    return res.status(404).json({ error: 'Team user not found.' });
+  }
+
+  return res.json({ message: `Team user "${username}" deleted successfully.` });
+});
+
+app.post('/api/admin/team-users/:username/reset-password', requireAdminAuth, async (req, res) => {
+  const username = sanitizeText(req.params.username).toLowerCase();
+  const newPassword = sanitizeText(req.body.newPassword);
+
+  if (!username) return res.status(400).json({ error: 'Username is required.' });
+
+  if (!isNonEmptyString(newPassword) || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+  }
+
+  const db = await getDb();
+  const existing = await db.collection('teamUsers').findOne({ username }, { projection: { _id: 0 } });
+  if (!existing) return res.status(404).json({ error: 'Team user not found.' });
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = createPasswordHash(newPassword, salt);
+  await db.collection('teamUsers').updateOne({ username }, { $set: { salt, passwordHash } });
+
+  return res.json({ message: `Password for "${username}" reset successfully.` });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
