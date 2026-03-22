@@ -1,5 +1,16 @@
 {
   "version": 2,
+  "functions": {
+    "server.js": {
+      "includeFiles": [
+        "*.html",
+        "*.css",
+        "*.js",
+        "img/**",
+        "data/**"
+      ]
+    }
+  },
   "builds": [
     { "src": "server.js", "use": "@vercel/node" }
   ],
