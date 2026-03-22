@@ -7,6 +7,9 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const contactWhatsappNumber = String(
+  process.env.CONTACT_WHATSAPP_NUMBER || process.env.WHATSAPP_NUMBER || ''
+).replace(/[^\d]/g, '');
 const adminPassword = process.env.ADMIN_PASSWORD || 'futuremakers-admin';
 const adminSessionSecret = process.env.ADMIN_SESSION_SECRET || crypto
   .createHash('sha256')
@@ -299,6 +302,27 @@ function isValidPhone(value) {
 
 function sanitizeText(value) {
   return String(value || '').trim();
+}
+
+function formatContactWhatsappMessage(submission) {
+  return [
+    'New contact form submission (FutureMakers)',
+    `Name: ${submission.fullName}`,
+    `Phone: ${submission.phone}`,
+    `Email: ${submission.email}`,
+    `Subject: ${submission.subject}`,
+    `Message: ${submission.message}`,
+    `Submitted: ${submission.submittedAt}`
+  ].join('\n');
+}
+
+function buildWhatsappUrl(phoneNumber, message) {
+  const sanitizedNumber = String(phoneNumber || '').replace(/[^\d]/g, '');
+  if (!sanitizedNumber || !message) {
+    return '';
+  }
+
+  return `https://wa.me/${sanitizedNumber}?text=${encodeURIComponent(message)}`;
 }
 
 function escapeHtml(value) {
@@ -903,8 +927,17 @@ app.post('/api/contact', async (req, res) => {
   };
 
   await appendRecord('contacts', record);
+  const whatsappUrl = buildWhatsappUrl(
+    contactWhatsappNumber,
+    formatContactWhatsappMessage(record)
+  );
+
   return res.status(201).json({
-    message: 'Your message has been received. Our team will contact you soon.'
+    message: 'Your message has been received. Our team will contact you soon.',
+    whatsapp: {
+      enabled: Boolean(whatsappUrl),
+      url: whatsappUrl
+    }
   });
 });
 

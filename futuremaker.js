@@ -419,6 +419,28 @@ async function submitJsonForm(url, payload) {
    return result;
 }
 
+function buildContactWhatsappUrl(formElement, payload) {
+   if (!formElement || !payload) {
+      return '';
+   }
+
+   const number = String(formElement.dataset.whatsappNumber || '').replace(/[^\d]/g, '');
+   if (!number) {
+      return '';
+   }
+
+   const message = [
+      'New contact form submission (FutureMakers)',
+      'Name: ' + (payload.fullName || ''),
+      'Phone: ' + (payload.phone || ''),
+      'Email: ' + (payload.email || ''),
+      'Subject: ' + (payload.subject || ''),
+      'Message: ' + (payload.message || '')
+   ].join('\n');
+
+   return 'https://wa.me/' + number + '?text=' + encodeURIComponent(message);
+}
+
 // Contact Form API submission
 (function () {
    const contactForm = document.getElementById('contactForm');
@@ -446,7 +468,16 @@ async function submitJsonForm(url, payload) {
 
       try {
          const result = await submitJsonForm(apiUrl, payload);
+         const whatsappUrl = (result.whatsapp && result.whatsapp.url)
+            ? result.whatsapp.url
+            : buildContactWhatsappUrl(contactForm, payload);
+
          setFormStatus(statusElement, result.message || 'Your message has been sent.', 'success');
+
+         if (whatsappUrl) {
+            window.open(whatsappUrl, '_blank', 'noopener');
+         }
+
          contactForm.reset();
       } catch (error) {
          setFormStatus(statusElement, error.message, 'error');
