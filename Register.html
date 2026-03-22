@@ -13,7 +13,7 @@
 <body>
     <header class="header">
         <div class="container">
-            <a href="Home.html" class="logo">
+            <a href="/" class="logo">
                 <img src="img/FUTUMAKERS LOGO.jpg" alt="Logo">
                 <span class="logo-text">FutureMakers</span>
             </a>
@@ -24,13 +24,13 @@
             </button>
             <nav class="navbar" id="siteNavigation">
                 <ul>
-                   <li><a href="index.html">Home</a></li>
-                    <li><a href="Aboutus.html">About Us</a></li>
-                    <li><a href="Service.html">Services</a></li>
-                    <li><a href="Opportunity.html">Opportunity</a></li>
-                    <li><a href="Testimonial.html">Testimonial</a></li>
-                    <li><a href="Contact.html">Contact</a></li>
-                    <li><a href="Register.html" class="active">Register</a></li>
+                   <li><a href="/">Home</a></li>
+                    <li><a href="/about-us">About Us</a></li>
+                    <li><a href="/services">Services</a></li>
+                    <li><a href="/opportunity">Opportunity</a></li>
+                    <li><a href="/testimonials">Testimonial</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/register" class="active">Register</a></li>
                 </ul>
             </nav>
         </div>
@@ -73,7 +73,7 @@
 
                 <section class="register-form-wrap" aria-label="Registration form">
                     <p class="register-form-title">Create Your Registration</p>
-                    <form class="register-form" id="registerForm" data-whatsapp="94705681574" action="#" method="post">
+                    <form class="register-form" id="registerForm" data-api="/api/registrations" action="/api/registrations" method="post">
                         <div class="register-grid">
                             <label>
                                 First Name
@@ -113,6 +113,13 @@
                         </div>
 
                         <label>
+                            Team User
+                            <select name="teamUser" id="teamUserSelect" required>
+                                <option value="" selected disabled>Select a team user</option>
+                            </select>
+                        </label>
+
+                        <label>
                             Career Goal
                             <textarea name="goal" rows="4" placeholder="Tell us what you want to achieve" required></textarea>
                         </label>
@@ -120,6 +127,16 @@
                         <section class="payment-box" aria-label="Website payment">
                             <h2>Payment Method</h2>
                             <p class="payment-note">Choose card checkout, direct bank transfer, or pay later.</p>
+
+                            <div class="team-user-bank-card hidden" id="teamUserBankCard" aria-live="polite">
+                                <p class="team-user-bank-title">Selected Team User Bank Account Details</p>
+                                <div class="bank-details-card">
+                                    <p><span>Bank</span><strong id="bankName">Your Bank Name</strong></p>
+                                    <p><span>Account Name</span><strong id="accountName">Your Account Name</strong></p>
+                                    <p><span>Account Number</span><strong id="accountNumber">0000000000</strong></p>
+                                    <p><span>Branch</span><strong id="branchName">Main Branch</strong></p>
+                                </div>
+                            </div>
 
                             <div class="payment-methods" role="radiogroup" aria-label="Payment methods">
                                 <label class="payment-method-item">
@@ -167,12 +184,6 @@
                             </div>
 
                             <div class="payment-bank-fields hidden" id="bankFields">
-                                <div class="bank-details-card" aria-live="polite">
-                                    <p><span>Bank</span><strong id="bankName">Your Bank Name</strong></p>
-                                    <p><span>Account Name</span><strong id="accountName">Your Account Name</strong></p>
-                                    <p><span>Account Number</span><strong id="accountNumber">0000000000</strong></p>
-                                    <p><span>Branch</span><strong id="branchName">Main Branch</strong></p>
-                                </div>
                                 <label>
                                     Transfer Reference / Receipt No
                                     <input type="text" name="transferReference" placeholder="Enter transfer reference">
@@ -186,6 +197,7 @@
                         </section>
 
                         <button type="submit" class="register-submit-btn">Pay & Complete Registration</button>
+                        <p class="form-status" id="registerFormStatus" aria-live="polite"></p>
                     </form>
                 </section>
             </div>
@@ -195,6 +207,7 @@
         
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="futuremaker.js"></script>
 </body>
 </html>

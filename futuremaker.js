@@ -357,57 +357,129 @@ document.addEventListener('click', function(e) {
    }
 });
 
-// Contact Form to WhatsApp
+function setFormStatus(element, message, type) {
+   if (!element) return;
+
+   element.textContent = message || '';
+   element.classList.remove('is-success', 'is-error');
+
+   if (type === 'success') {
+      element.classList.add('is-success');
+   }
+
+   if (type === 'error') {
+      element.classList.add('is-error');
+   }
+}
+
+function resolveApiUrl(url) {
+   const configuredBase = (window.FUTUREMAKERS_API_BASE || '').trim();
+   const fallbackBase = window.location.protocol === 'file:' ? 'http://localhost:3000' : '';
+   const base = (configuredBase || fallbackBase).replace(/\/$/, '');
+
+   if (!url) {
+      return base;
+   }
+
+   if (/^https?:\/\//i.test(url)) {
+      return url;
+   }
+
+   const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+   return `${base}${normalizedPath}`;
+}
+
+async function submitJsonForm(url, payload) {
+   let response;
+
+   try {
+      response = await fetch(resolveApiUrl(url), {
+         method: 'POST',
+         headers: {
+            'Content-Type': 'application/json'
+         },
+         body: JSON.stringify(payload)
+      });
+   } catch (_networkError) {
+      throw new Error('Unable to reach the backend API. Start Node server and open this site from that server URL.');
+   }
+
+   let result = {};
+
+   try {
+      result = await response.json();
+   } catch (_error) {
+      result = {};
+   }
+
+   if (!response.ok) {
+      throw new Error(result.error || 'Unable to submit the form right now.');
+   }
+
+   return result;
+}
+
+// Contact Form API submission
 (function () {
    const contactForm = document.getElementById('contactForm');
    if (!contactForm) return;
 
-   contactForm.addEventListener('submit', function (e) {
+   const statusElement = document.getElementById('contactFormStatus');
+   const submitButton = contactForm.querySelector('button[type="submit"]');
+
+   contactForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      const targetNumber = (contactForm.dataset.whatsapp || '').trim();
-      if (!targetNumber) return;
+      if (!contactForm.reportValidity()) return;
 
-      const fullName = contactForm.fullName ? contactForm.fullName.value.trim() : '';
-      const phone = contactForm.phone ? contactForm.phone.value.trim() : '';
-      const email = contactForm.email ? contactForm.email.value.trim() : '';
-      const subject = contactForm.subject ? contactForm.subject.value.trim() : '';
-      const message = contactForm.message ? contactForm.message.value.trim() : '';
+      const apiUrl = contactForm.dataset.api || contactForm.getAttribute('action') || '/api/contact';
+      const payload = {
+         fullName: contactForm.fullName ? contactForm.fullName.value.trim() : '',
+         phone: contactForm.phone ? contactForm.phone.value.trim() : '',
+         email: contactForm.email ? contactForm.email.value.trim() : '',
+         subject: contactForm.subject ? contactForm.subject.value.trim() : '',
+         message: contactForm.message ? contactForm.message.value.trim() : ''
+      };
 
-      const text = [
-         'New message from FutureMakers website',
-         '',
-         'Name: ' + fullName,
-         'Phone: ' + phone,
-         'Email: ' + email,
-         'Subject: ' + subject,
-         'Message: ' + message
-      ].join('\n');
+      setFormStatus(statusElement, 'Sending your message...', 'success');
+      if (submitButton) submitButton.disabled = true;
 
-      const whatsappUrl = 'https://wa.me/' + targetNumber + '?text=' + encodeURIComponent(text);
-      window.open(whatsappUrl, '_blank');
+      try {
+         const result = await submitJsonForm(apiUrl, payload);
+         setFormStatus(statusElement, result.message || 'Your message has been sent.', 'success');
+         contactForm.reset();
+      } catch (error) {
+         setFormStatus(statusElement, error.message, 'error');
+      } finally {
+         if (submitButton) submitButton.disabled = false;
+      }
    });
 })();
 
-// Register Form Website Payment
+// Register Form API submission
 (function () {
    const registerForm = document.getElementById('registerForm');
    if (!registerForm) return;
 
-   const whatsappNumber = (registerForm.dataset.whatsapp || '').trim();
+   const statusElement = document.getElementById('registerFormStatus');
+   const submitButton = registerForm.querySelector('button[type="submit"]');
    const programField = registerForm.querySelector('select[name="program"]');
    const paymentMethodFields = registerForm.querySelectorAll('input[name="paymentMethod"]');
    const cardFields = document.getElementById('cardFields');
    const bankFields = document.getElementById('bankFields');
+   const teamUserBankCard = document.getElementById('teamUserBankCard');
    const programFee = document.getElementById('programFee');
+   const teamUserField = registerForm.querySelector('select[name="teamUser"]');
 
-   // Update these values with your real account details.
-   const bankDetails = {
+   const fallbackBankDetails = {
       bankName: 'Bank of Ceylon',
-      accountName: 'U.Yethavran',
+      accountName: 'FutureMakers Enrollment',
       accountNumber: '8502232',
-      branchName: 'Jaffna'
+      branchName: 'Jaffna',
+      paymentNote: 'Use your application code as the transfer reference.'
    };
+
+   const teamUsersByUsername = new Map();
 
    const feeMap = {
       orientation: 1000,
@@ -422,55 +494,10 @@ document.addEventListener('click', function(e) {
       });
    }
 
-   function getProgramLabel() {
-      if (!programField) return '';
-      const selectedOption = programField.options[programField.selectedIndex];
-      return selectedOption ? selectedOption.text : '';
-   }
-
    function getPaymentMethodLabel(method) {
       if (method === 'card') return 'Card Payment';
       if (method === 'bank') return 'Direct Bank Transfer';
       return 'Pay Later (At Office)';
-   }
-
-   function sendRegistrationToWhatsapp(method, amount) {
-      if (!whatsappNumber) return;
-
-      const firstName = registerForm.firstName ? registerForm.firstName.value.trim() : '';
-      const lastName = registerForm.lastName ? registerForm.lastName.value.trim() : '';
-      const fullName = [firstName, lastName].filter(Boolean).join(' ');
-      const email = registerForm.email ? registerForm.email.value.trim() : '';
-      const phone = registerForm.phone ? registerForm.phone.value.trim() : '';
-      const city = registerForm.city ? registerForm.city.value.trim() : '';
-      const goal = registerForm.goal ? registerForm.goal.value.trim() : '';
-      const transferReference = registerForm.transferReference ? registerForm.transferReference.value.trim() : '';
-      const payerName = registerForm.payerName ? registerForm.payerName.value.trim() : '';
-
-      const lines = [
-         'New FutureMakers registration payment',
-         '',
-         'Name: ' + fullName,
-         'Email: ' + email,
-         'Phone: ' + phone,
-         'City: ' + city,
-         'Program: ' + getProgramLabel(),
-         'Career Goal: ' + goal,
-         'Payment Method: ' + getPaymentMethodLabel(method),
-         'Amount: ' + formatLkr(amount)
-      ];
-
-      if (method === 'bank') {
-         lines.push('Transfer Reference: ' + transferReference);
-         lines.push('Payer Name: ' + payerName);
-      }
-
-      if (method === 'card') {
-         lines.push('Status: Customer says website payment is completed.');
-      }
-
-      const whatsappUrl = 'https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(lines.join('\n'));
-      window.open(whatsappUrl, '_blank');
    }
 
    function updateFee() {
@@ -480,15 +507,67 @@ document.addEventListener('click', function(e) {
    }
 
    function updateBankDetails() {
+      const selectedUsername = teamUserField ? teamUserField.value : '';
+      const selectedUser = selectedUsername ? teamUsersByUsername.get(selectedUsername) : null;
+      const hasTeamUserSelection = Boolean(selectedUsername);
+      const details = selectedUser && selectedUser.paymentDetails ? selectedUser.paymentDetails : fallbackBankDetails;
       const bankName = document.getElementById('bankName');
       const accountName = document.getElementById('accountName');
       const accountNumber = document.getElementById('accountNumber');
       const branchName = document.getElementById('branchName');
+      const paymentHelp = registerForm.querySelector('.payment-help');
 
-      if (bankName) bankName.textContent = bankDetails.bankName;
-      if (accountName) accountName.textContent = bankDetails.accountName;
-      if (accountNumber) accountNumber.textContent = bankDetails.accountNumber;
-      if (branchName) branchName.textContent = bankDetails.branchName;
+      if (teamUserBankCard) {
+         teamUserBankCard.classList.toggle('hidden', !hasTeamUserSelection);
+      }
+
+      if (bankName) bankName.textContent = details.bankName || fallbackBankDetails.bankName;
+      if (accountName) accountName.textContent = details.accountName || fallbackBankDetails.accountName;
+      if (accountNumber) accountNumber.textContent = details.accountNumber || fallbackBankDetails.accountNumber;
+      if (branchName) branchName.textContent = details.branchName || fallbackBankDetails.branchName;
+      if (paymentHelp) {
+         paymentHelp.textContent = (details.paymentNote || fallbackBankDetails.paymentNote) + ' After payment, send your receipt and account number to our WhatsApp number: +94 70 568 1574 so we can verify and approve your registration.';
+      }
+   }
+
+   async function loadTeamUsers() {
+      if (!teamUserField) return;
+
+      try {
+          const response = await fetch(resolveApiUrl('/api/team/public-users'));
+         const result = await response.json();
+         if (!response.ok) {
+            throw new Error(result.error || 'Unable to load team users.');
+         }
+
+         const users = Array.isArray(result.items) ? result.items : [];
+         teamUsersByUsername.clear();
+
+         const currentValue = teamUserField.value;
+         teamUserField.innerHTML = '<option value="" disabled selected>Select a team user</option>';
+
+         users.forEach((user) => {
+            if (!user || !user.username) return;
+
+            const username = String(user.username).trim().toLowerCase();
+            teamUsersByUsername.set(username, user);
+
+            const option = document.createElement('option');
+            option.value = username;
+            option.textContent = `${user.fullName || username} (${user.role || 'Team Member'})`;
+            teamUserField.appendChild(option);
+         });
+
+         if (currentValue && teamUsersByUsername.has(currentValue)) {
+            teamUserField.value = currentValue;
+         }
+
+         updateBankDetails();
+      } catch (_error) {
+            console.error('Unable to load team users', error);
+            setFormStatus(statusElement, error.message || 'Unable to connect to backend API.', 'error');
+         updateBankDetails();
+      }
    }
 
    function updatePaymentMode() {
@@ -539,6 +618,10 @@ document.addEventListener('click', function(e) {
       programField.addEventListener('change', updateFee);
    }
 
+   if (teamUserField) {
+      teamUserField.addEventListener('change', updateBankDetails);
+   }
+
    paymentMethodFields.forEach((field) => {
       field.addEventListener('change', updatePaymentMode);
    });
@@ -546,8 +629,9 @@ document.addEventListener('click', function(e) {
    updateBankDetails();
    updateFee();
    updatePaymentMode();
+   loadTeamUsers();
 
-   registerForm.addEventListener('submit', function (e) {
+   registerForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
       if (!registerForm.reportValidity()) return;
@@ -555,26 +639,53 @@ document.addEventListener('click', function(e) {
       const selected = registerForm.querySelector('input[name="paymentMethod"]:checked');
       const paymentMethod = selected ? selected.value : 'cash';
       const isCard = paymentMethod === 'card';
-      const isBank = paymentMethod === 'bank';
+      const amount = feeMap[programField.value] || 0;
+      const apiUrl = registerForm.dataset.api || registerForm.getAttribute('action') || '/api/registrations';
 
       if (isCard && !isCardDataValid()) {
-         alert('Please enter valid card details to continue payment.');
+         setFormStatus(statusElement, 'Please enter valid card details to continue payment.', 'error');
          return;
       }
 
-      const amount = feeMap[programField.value] || 0;
-      sendRegistrationToWhatsapp(paymentMethod, amount);
+      const payload = {
+         firstName: registerForm.firstName ? registerForm.firstName.value.trim() : '',
+         lastName: registerForm.lastName ? registerForm.lastName.value.trim() : '',
+         email: registerForm.email ? registerForm.email.value.trim() : '',
+         phone: registerForm.phone ? registerForm.phone.value.trim() : '',
+         program: registerForm.program ? registerForm.program.value : '',
+         teamUser: registerForm.teamUser ? registerForm.teamUser.value : '',
+         city: registerForm.city ? registerForm.city.value.trim() : '',
+         goal: registerForm.goal ? registerForm.goal.value.trim() : '',
+         paymentMethod: paymentMethod,
+         cardNumber: registerForm.cardNumber ? registerForm.cardNumber.value.trim() : '',
+         cardName: registerForm.cardName ? registerForm.cardName.value.trim() : '',
+         expMonth: registerForm.expMonth ? registerForm.expMonth.value.trim() : '',
+         expYear: registerForm.expYear ? registerForm.expYear.value.trim() : '',
+         transferReference: registerForm.transferReference ? registerForm.transferReference.value.trim() : '',
+         payerName: registerForm.payerName ? registerForm.payerName.value.trim() : ''
+      };
 
-      if (isCard) {
-         alert('Payment successful. Your details have been prepared in WhatsApp for confirmation. Amount paid: ' + formatLkr(amount));
-      } else if (isBank) {
-         alert('Bank transfer details submitted. A WhatsApp message has been prepared for confirmation. Please attach your payment receipt before sending. Amount: ' + formatLkr(amount));
-      } else {
-         alert('Registration submitted. A WhatsApp message has been prepared for confirmation. Amount due: ' + formatLkr(amount));
+      setFormStatus(statusElement, 'Submitting your registration...', 'success');
+      if (submitButton) submitButton.disabled = true;
+
+      try {
+         const result = await submitJsonForm(apiUrl, payload);
+         const paymentSummary = amount > 0 ? ' Amount: ' + formatLkr(amount) + '.' : '';
+         const methodSummary = ' Payment method: ' + getPaymentMethodLabel(paymentMethod) + '.';
+         const applicationCodeSummary = result.applicationCode ? ' Application code: ' + result.applicationCode + '.' : '';
+         const teamSummary = result.assignedTeamUserName ? ' Assigned team user: ' + result.assignedTeamUserName + '.' : '';
+         const mailSummary = result.mail && result.mail.sent
+            ? ' Confirmation email sent.'
+            : ' Registration saved. Email is pending from server configuration.';
+         setFormStatus(statusElement, (result.message || 'Registration submitted successfully.') + paymentSummary + methodSummary + applicationCodeSummary + teamSummary + mailSummary, 'success');
+         registerForm.reset();
+         updateFee();
+         updatePaymentMode();
+         loadTeamUsers();
+      } catch (error) {
+         setFormStatus(statusElement, error.message, 'error');
+      } finally {
+         if (submitButton) submitButton.disabled = false;
       }
-
-      registerForm.reset();
-      updateFee();
-      updatePaymentMode();
    });
 })();

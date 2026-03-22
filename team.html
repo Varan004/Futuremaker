@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="img/FUTUMAKERS LOGO.jpg">
+    <title>FutureMakers Team Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="futuremaker.css">
+</head>
+<body class="team-page">
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <header class="header admin-header">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="img/FUTUMAKERS LOGO.jpg" alt="Logo">
+                <span class="logo-text">FutureMakers Team</span>
+            </a>
+            <nav class="navbar admin-topnav" aria-label="Team navigation">
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/team" class="active">Team</a></li>
+                    <li><a href="/admin">Admin</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="team-main">
+        <section class="team-shell">
+            <section class="team-auth-card" id="teamAuthCard">
+                <p class="admin-kicker">Team User Access</p>
+                <h1 id="teamAuthTitle">Login to your personal team dashboard</h1>
+                <p id="teamAuthSubtitle">Each team member gets a personalized view with their role, tasks, permissions, and workspace activity.</p>
+                <div class="team-auth-switch" role="tablist" aria-label="Team authentication mode">
+                    <button type="button" class="team-auth-tab active" id="teamAuthLoginTab" data-mode="login" aria-selected="true">Login</button>
+                    <button type="button" class="team-auth-tab" id="teamAuthRegisterTab" data-mode="register" aria-selected="false">Register</button>
+                    <button type="button" class="team-auth-tab" id="teamAuthForgotTab" data-mode="forgot" aria-selected="false">Forgot Password</button>
+                </div>
+                <form class="team-login-form" id="teamLoginForm">
+                    <label class="admin-field">
+                        Username
+                        <input type="text" name="username" autocomplete="username" placeholder="Enter your username" required>
+                    </label>
+                    <label class="admin-field">
+                        Password
+                        <input type="password" name="password" autocomplete="current-password" placeholder="Enter your password" required>
+                    </label>
+                    <button type="submit" class="contact-submit-btn admin-login-btn">Login</button>
+                </form>
+                <form class="team-login-form" id="teamForgotForm" hidden>
+                    <label class="admin-field">
+                        Username
+                        <input type="text" name="username" autocomplete="username" placeholder="Enter your username" required>
+                    </label>
+                    <label class="admin-field">
+                        Registered Email
+                        <input type="email" name="email" autocomplete="email" placeholder="you@example.com" required>
+                    </label>
+                    <label class="admin-field">
+                        New Password
+                        <input type="password" name="newPassword" autocomplete="new-password" placeholder="New password (min 8 chars)" required>
+                    </label>
+                    <label class="admin-field">
+                        Confirm New Password
+                        <input type="password" name="confirmPassword" autocomplete="new-password" placeholder="Confirm new password" required>
+                    </label>
+                    <button type="submit" class="contact-submit-btn admin-login-btn">Reset Password</button>
+                </form>
+                <form class="team-login-form" id="teamRegisterForm" hidden>
+                    <label class="admin-field">
+                        Full Name
+                        <input type="text" name="fullName" autocomplete="name" placeholder="Enter your full name" required>
+                    </label>
+                    <label class="admin-field">
+                        Username
+                        <input type="text" name="username" autocomplete="username" placeholder="Create a username" required>
+                    </label>
+                    <label class="admin-field">
+                        Email
+                        <input type="email" name="email" autocomplete="email" placeholder="you@example.com" required>
+                    </label>
+                    <label class="admin-field">
+                        Role
+                        <input type="text" name="role" placeholder="Team Member">
+                    </label>
+                    <label class="admin-field">
+                        Department
+                        <input type="text" name="department" placeholder="Operations">
+                    </label>
+                    <label class="admin-field">
+                        Focus Area
+                        <input type="text" name="focusArea" placeholder="Lead follow-up and coordination">
+                    </label>
+                    <label class="admin-field">
+                        Password
+                        <input type="password" name="password" autocomplete="new-password" placeholder="Create password (min 8 chars)" required>
+                    </label>
+                    <button type="submit" class="contact-submit-btn admin-login-btn">Create Account</button>
+                </form>
+                <div class="team-login-help">
+                    <p>Starter users (or register your own):</p>
+                    <ul>
+                        <li><strong>teamlead</strong></li>
+                        <li><strong>coordinator</strong></li>
+                        <li><strong>support</strong></li>
+                    </ul>
+                </div>
+                <p class="admin-status" id="teamLoginStatus" aria-live="polite">Checking team session...</p>
+            </section>
+
+            <section class="team-dashboard" id="teamDashboard" hidden>
+                <div class="team-hero">
+                    <div>
+                        <p class="admin-kicker">Personal Team Dashboard</p>
+                        <h1 id="teamWelcomeTitle">Welcome back</h1>
+                        <p id="teamWelcomeNote">Loading your team dashboard...</p>
+                    </div>
+                    <div class="admin-actions">
+                        <button type="button" class="admin-outline-btn admin-logout-btn" id="teamLogoutButton">Logout</button>
+                    </div>
+                </div>
+
+                <div class="team-profile-grid">
+                    <article class="team-profile-card">
+                        <span class="admin-summary-label">Full Name</span>
+                        <strong id="teamFullName">-</strong>
+                    </article>
+                    <article class="team-profile-card">
+                        <span class="admin-summary-label">Role</span>
+                        <strong id="teamRole">-</strong>
+                    </article>
+                    <article class="team-profile-card">
+                        <span class="admin-summary-label">Department</span>
+                        <strong id="teamDepartment">-</strong>
+                    </article>
+                    <article class="team-profile-card">
+                        <span class="admin-summary-label">Focus Area</span>
+                        <strong id="teamFocusArea">-</strong>
+                    </article>
+                </div>
+
+                <div class="team-stats-grid">
+                    <article class="team-stat-card">
+                        <span class="admin-summary-label">Assigned Leads</span>
+                        <strong id="teamAssignedLeads">0</strong>
+                    </article>
+                    <article class="team-stat-card">
+                        <span class="admin-summary-label">Pending Actions</span>
+                        <strong id="teamPendingActions">0</strong>
+                    </article>
+                    <article class="team-stat-card">
+                        <span class="admin-summary-label">Completed Follow-ups</span>
+                        <strong id="teamCompletedFollowUps">0</strong>
+                    </article>
+                    <article class="team-stat-card">
+                        <span class="admin-summary-label">Priority Level</span>
+                        <strong id="teamPriorityLevel">-</strong>
+                    </article>
+                </div>
+
+                <p class="admin-status" id="teamStatus" aria-live="polite">Loading your dashboard...</p>
+
+                <section class="team-grid-two">
+                    <section class="team-panel">
+                        <div class="admin-section-heading">
+                            <h2>Your Tasks</h2>
+                            <span id="teamTasksMeta">0 tasks</span>
+                        </div>
+                        <div class="team-task-list" id="teamTaskList"></div>
+                    </section>
+
+                    <section class="team-panel">
+                        <div class="admin-section-heading">
+                            <h2>Your Permissions</h2>
+                            <span id="teamPermissionsMeta">0 items</span>
+                        </div>
+                        <ul class="team-permission-list" id="teamPermissionList"></ul>
+                    </section>
+                </section>
+
+                <section class="team-grid-two">
+                    <section class="team-panel">
+                        <div class="admin-section-heading">
+                            <h2>Workspace Snapshot</h2>
+                            <span>Live summary</span>
+                        </div>
+                        <div class="team-workspace-grid">
+                            <article class="team-mini-stat">
+                                <span>Contact Submissions</span>
+                                <strong id="teamWorkspaceContacts">0</strong>
+                            </article>
+                            <article class="team-mini-stat">
+                                <span>Registrations</span>
+                                <strong id="teamWorkspaceRegistrations">0</strong>
+                            </article>
+                            <article class="team-mini-stat">
+                                <span>Latest Contact</span>
+                                <strong id="teamLatestContact">-</strong>
+                            </article>
+                            <article class="team-mini-stat">
+                                <span>Latest Registration</span>
+                                <strong id="teamLatestRegistration">-</strong>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="team-panel">
+                        <div class="admin-section-heading">
+                            <h2>Recent Activity</h2>
+                            <span>Newest items</span>
+                        </div>
+                        <div class="team-activity-list" id="teamActivityList"></div>
+                    </section>
+                </section>
+
+                <section class="team-panel">
+                    <div class="admin-section-heading">
+                        <h2>Bank Details</h2>
+                        <span>Used on registration page</span>
+                    </div>
+                    <form class="team-login-form" id="teamPaymentDetailsForm">
+                        <label class="admin-field">
+                            Bank Name
+                            <input type="text" name="bankName" placeholder="Bank name" required>
+                        </label>
+                        <label class="admin-field">
+                            Account Name
+                            <input type="text" name="accountName" placeholder="Account name" required>
+                        </label>
+                        <label class="admin-field">
+                            Account Number
+                            <input type="text" name="accountNumber" placeholder="Account number" required>
+                        </label>
+                        <label class="admin-field">
+                            Branch Name
+                            <input type="text" name="branchName" placeholder="Branch name" required>
+                        </label>
+                        <label class="admin-field">
+                            Payment Note
+                            <input type="text" name="paymentNote" placeholder="Payment note for registrants" required>
+                        </label>
+                        <button type="submit" class="contact-submit-btn admin-login-btn">Save Bank Details</button>
+                    </form>
+                    <p class="admin-status" id="teamPaymentStatus" aria-live="polite">Update your payout details used by registrants.</p>
+                </section>
+
+            </section>
+        </section>
+    </main>
+
+    <script src="team.js"></script>
+</body>
+</html>

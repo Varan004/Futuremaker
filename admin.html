@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/jpeg" href="img/FUTUMAKERS LOGO.jpg">
+    <title>FutureMakers Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="futuremaker.css">
+</head>
+<body class="admin-page">
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <header class="header admin-header">
+        <div class="container">
+            <a href="/" class="logo">
+                <img src="img/FUTUMAKERS LOGO.jpg" alt="Logo">
+                <span class="logo-text">FutureMakers Admin</span>
+            </a>
+            <nav class="navbar admin-topnav" aria-label="Admin navigation">
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/admin" class="active">Admin</a></li>
+                    <li><a href="/team">Team</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <section class="admin-shell">
+            <section class="admin-auth-card" id="adminAuthCard">
+                <p class="admin-kicker">Admin Access</p>
+                <h1>Login to view submission data</h1>
+                <p>Enter the admin password to unlock the dashboard for contact and registration records.</p>
+                <form class="admin-login-form" id="adminLoginForm">
+                    <label class="admin-field">
+                        Admin Password
+                        <input type="password" name="password" id="adminPassword" autocomplete="current-password" placeholder="Enter admin password" required>
+                    </label>
+                    <button type="submit" class="contact-submit-btn admin-login-btn">Login</button>
+                </form>
+                <p class="admin-status" id="adminLoginStatus" aria-live="polite">Checking admin session...</p>
+            </section>
+
+            <section class="admin-dashboard" id="adminDashboard" hidden>
+                <div class="admin-hero">
+                    <div>
+                        <p class="admin-kicker">Protected Admin Dashboard</p>
+                        <h1>Submission dashboard for contact and registration records</h1>
+                        <p>Review the saved website submissions, latest activity, and raw records from one place.</p>
+                    </div>
+                    <div class="admin-actions">
+                        <a href="/api/admin/submissions" class="admin-outline-btn" target="_blank" rel="noreferrer">Open Raw JSON</a>
+                        <button type="button" class="admin-outline-btn admin-logout-btn" id="adminLogoutButton">Logout</button>
+                    </div>
+                </div>
+
+                <div class="admin-summary-grid" id="adminSummaryGrid">
+                    <article class="admin-summary-card">
+                        <span class="admin-summary-label">Contact Submissions</span>
+                        <strong id="adminContactCount">0</strong>
+                    </article>
+                    <article class="admin-summary-card">
+                        <span class="admin-summary-label">Registrations</span>
+                        <strong id="adminRegistrationCount">0</strong>
+                    </article>
+                    <article class="admin-summary-card">
+                        <span class="admin-summary-label">Latest Contact</span>
+                        <strong id="adminLatestContact">-</strong>
+                    </article>
+                    <article class="admin-summary-card">
+                        <span class="admin-summary-label">Latest Registration</span>
+                        <strong id="adminLatestRegistration">-</strong>
+                    </article>
+                </div>
+
+                <p class="admin-status" id="adminStatus" aria-live="polite">Loading submission data...</p>
+
+                <section class="admin-table-section">
+                    <div class="admin-section-heading">
+                        <h2>Contact Submissions</h2>
+                        <span id="adminContactMeta">0 records</span>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Submitted</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th>Subject</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactTableBody">
+                                <tr>
+                                    <td colspan="7">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="admin-table-section">
+                    <div class="admin-section-heading">
+                        <h2>Registrations</h2>
+                        <span id="adminRegistrationMeta">0 records</span>
+                    </div>
+                    <div class="admin-table-wrap">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Program</th>
+                                    <th>City</th>
+                                    <th>Goal</th>
+                                    <th>Payment</th>
+                                    <th>Amount</th>
+                                    <th>Transfer Reference</th>
+                                    <th>Payer Name</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registrationTableBody">
+                                <tr>
+                                    <td colspan="13">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

@@ -3276,6 +3276,538 @@ main {
     box-shadow: 0 12px 24px rgba(143, 107, 255, 0.44);
 }
 
+.form-status {
+    min-height: 1.5rem;
+    margin-top: 0.9rem;
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.form-status.is-success {
+    color: #8df0bf;
+}
+
+.form-status.is-error {
+    color: #ff9b9b;
+}
+
+.admin-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(143, 107, 255, 0.18), transparent 35%),
+        radial-gradient(circle at top right, rgba(255, 63, 196, 0.14), transparent 30%),
+        linear-gradient(180deg, #060811 0%, #0d1020 100%);
+}
+
+.admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    backdrop-filter: blur(16px);
+}
+
+.admin-topnav ul {
+    gap: 0.6rem;
+}
+
+.admin-main {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 1.2rem 4rem;
+}
+
+.admin-shell {
+    width: min(1300px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 1.6rem;
+}
+
+.admin-auth-card {
+    width: min(560px, 100%);
+    margin: 2rem auto 0;
+    padding: 1.8rem;
+    border-radius: 26px;
+    background: rgba(9, 12, 24, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px rgba(4, 6, 12, 0.42);
+    backdrop-filter: blur(18px);
+}
+
+.admin-auth-card h1 {
+    margin: 0;
+    color: #ffffff;
+    font-family: "Syne", sans-serif;
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.admin-auth-card p {
+    color: rgba(233, 237, 255, 0.78);
+}
+
+.admin-login-form {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+
+.admin-field {
+    display: grid;
+    gap: 0.45rem;
+    color: rgba(233, 237, 255, 0.88);
+    font-size: 0.95rem;
+}
+
+.admin-field input {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.04);
+    color: #ffffff;
+    padding: 0.95rem 1rem;
+    outline: none;
+}
+
+.admin-field input:focus {
+    border-color: rgba(143, 107, 255, 0.85);
+    box-shadow: 0 0 0 3px rgba(143, 107, 255, 0.16);
+}
+
+.admin-login-btn,
+.admin-logout-btn {
+    min-width: 140px;
+}
+
+.admin-dashboard[hidden],
+.admin-auth-card[hidden] {
+    display: none !important;
+}
+
+.team-page {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(143, 107, 255, 0.2), transparent 35%),
+        radial-gradient(circle at right center, rgba(255, 102, 153, 0.14), transparent 28%),
+        linear-gradient(180deg, #05070f 0%, #0a0f1f 100%);
+}
+
+.team-main {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 1.2rem 4rem;
+}
+
+.team-shell {
+    width: min(1240px, 100%);
+    margin: 0 auto;
+    display: grid;
+    gap: 1.6rem;
+}
+
+.team-auth-card,
+.team-hero,
+.team-profile-card,
+.team-stat-card,
+.team-panel,
+.team-mini-stat {
+    background: rgba(9, 12, 24, 0.76);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px rgba(4, 6, 12, 0.42);
+    backdrop-filter: blur(18px);
+}
+
+.team-auth-card {
+    width: min(620px, 100%);
+    margin: 2rem auto 0;
+    padding: 1.8rem;
+    border-radius: 26px;
+}
+
+.team-auth-card h1,
+.team-hero h1 {
+    margin: 0;
+    color: #ffffff;
+    font-family: "Syne", sans-serif;
+    font-size: clamp(1.9rem, 4vw, 3rem);
+}
+
+.team-auth-card p,
+.team-hero p,
+.team-login-help {
+    color: rgba(233, 237, 255, 0.78);
+}
+
+.team-login-form {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.2rem;
+}
+
+.team-login-form[hidden] {
+    display: none !important;
+}
+
+.team-auth-switch {
+    margin-top: 1rem;
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    border-radius: 999px;
+    padding: 0.3rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.team-auth-tab {
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: rgba(222, 227, 247, 0.86);
+    padding: 0.5rem 1rem;
+    font-family: "Outfit", sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.team-auth-tab.active {
+    background: linear-gradient(110deg, rgba(143, 107, 255, 0.92), rgba(255, 63, 196, 0.86));
+    color: #ffffff;
+}
+
+.team-auth-tab:hover {
+    color: #ffffff;
+}
+
+.team-login-help ul {
+    margin: 0.45rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.team-dashboard[hidden] {
+    display: none !important;
+}
+
+.team-hero {
+    border-radius: 26px;
+    padding: 1.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1rem;
+}
+
+.team-profile-grid,
+.team-stats-grid,
+.team-workspace-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.team-profile-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-stats-grid,
+.team-workspace-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-profile-card,
+.team-stat-card,
+.team-mini-stat {
+    border-radius: 22px;
+    padding: 1.2rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.team-profile-card strong,
+.team-stat-card strong,
+.team-mini-stat strong {
+    color: #ffffff;
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.team-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.team-panel {
+    border-radius: 24px;
+    padding: 1.2rem;
+}
+
+.team-task-list,
+.team-activity-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.team-task-card,
+.team-activity-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    border-radius: 18px;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.team-task-card h3,
+.team-activity-item strong,
+.team-activity-item p {
+    margin: 0;
+    color: #ffffff;
+}
+
+.team-task-card p,
+.team-task-card span,
+.team-activity-item span,
+.team-activity-item time {
+    color: rgba(225, 230, 247, 0.72);
+}
+
+.team-permission-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    display: grid;
+    gap: 0.7rem;
+    color: rgba(240, 244, 255, 0.86);
+}
+
+.team-empty-state {
+    margin: 0;
+    color: rgba(225, 230, 247, 0.72);
+}
+
+.admin-hero,
+.admin-summary-card,
+.admin-table-section {
+    background: rgba(9, 12, 24, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 24px 60px rgba(4, 6, 12, 0.42);
+    backdrop-filter: blur(18px);
+}
+
+.admin-hero {
+    border-radius: 26px;
+    padding: 1.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1rem;
+}
+
+.admin-kicker {
+    margin: 0 0 0.55rem;
+    color: #ff7dc8;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.admin-hero h1 {
+    margin: 0;
+    color: #ffffff;
+    font-family: "Syne", sans-serif;
+    font-size: clamp(2rem, 4vw, 3.1rem);
+}
+
+.admin-hero p {
+    margin: 0.8rem 0 0;
+    max-width: 760px;
+    color: rgba(233, 237, 255, 0.78);
+}
+
+.admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.admin-outline-btn {
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    text-decoration: none;
+    padding: 0.8rem 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.admin-outline-btn:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.admin-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.admin-summary-card {
+    border-radius: 22px;
+    padding: 1.2rem;
+    display: grid;
+    gap: 0.45rem;
+}
+
+.admin-summary-label {
+    color: rgba(222, 227, 247, 0.68);
+    font-size: 0.84rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.admin-summary-card strong {
+    color: #ffffff;
+    font-size: clamp(1.1rem, 3vw, 1.8rem);
+    line-height: 1.2;
+}
+
+.admin-status {
+    margin: 0;
+    border-radius: 16px;
+    padding: 0.9rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-table-section {
+    border-radius: 26px;
+    padding: 1.3rem;
+}
+
+.admin-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-section-heading h2 {
+    margin: 0;
+    color: #ffffff;
+    font-family: "Syne", sans-serif;
+    font-size: 1.35rem;
+}
+
+.admin-section-heading span {
+    color: rgba(222, 227, 247, 0.72);
+}
+
+.admin-table-wrap {
+    overflow: auto;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+    background: rgba(4, 6, 12, 0.68);
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 0.95rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: top;
+    color: rgba(240, 244, 255, 0.88);
+    font-size: 0.94rem;
+}
+
+.admin-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(17, 21, 39, 0.95);
+    color: #ffffff;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.admin-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+@media (max-width: 1080px) {
+    .admin-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .admin-hero {
+        align-items: start;
+        flex-direction: column;
+    }
+
+    .team-hero,
+    .team-grid-two {
+        grid-template-columns: 1fr;
+        align-items: start;
+        flex-direction: column;
+    }
+
+    .team-profile-grid,
+    .team-stats-grid,
+    .team-workspace-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-main {
+        padding-inline: 0.8rem;
+    }
+
+    .admin-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-hero,
+    .admin-table-section,
+    .admin-summary-card,
+    .admin-auth-card {
+        border-radius: 20px;
+    }
+
+    .team-main {
+        padding-inline: 0.8rem;
+    }
+
+    .team-profile-grid,
+    .team-stats-grid,
+    .team-workspace-grid,
+    .team-grid-two {
+        grid-template-columns: 1fr;
+    }
+
+    .team-auth-card,
+    .team-hero,
+    .team-profile-card,
+    .team-stat-card,
+    .team-panel,
+    .team-mini-stat {
+        border-radius: 20px;
+    }
+}
+
+.contact-submit-btn:disabled,
+.register-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
 @media (max-width: 1020px) {
     .contact-layout {
         grid-template-columns: 1fr;
@@ -3502,6 +4034,25 @@ main {
     margin: 0;
     font-size: 0.84rem;
     color: var(--text-soft);
+}
+
+.team-user-bank-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.team-user-bank-card.hidden {
+    display: none;
+}
+
+.team-user-bank-title {
+    margin: 0;
+    color: #f3e8ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .payment-methods {

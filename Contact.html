@@ -13,7 +13,7 @@
 <body>
     <header class="header">
         <div class="container">
-            <a href="Home.html" class="logo">
+            <a href="/" class="logo">
                 <img src="img/FUTUMAKERS LOGO.jpg" alt="Logo">
                 <span class="logo-text">FutureMakers</span>
             </a>
@@ -24,13 +24,13 @@
             </button>
             <nav class="navbar" id="siteNavigation">
                 <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="Aboutus.html">About Us</a></li>
-                    <li><a href="Service.html">Services</a></li>
-                    <li><a href="Opportunity.html">Opportunity</a></li>
-                    <li><a href="Testimonial.html">Testimonial</a></li>
-                    <li><a href="Contact.html" class="active">Contact</a></li>
-                    <li><a href="Register.html">Register</a></li>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/about-us">About Us</a></li>
+                    <li><a href="/services">Services</a></li>
+                    <li><a href="/opportunity">Opportunity</a></li>
+                    <li><a href="/testimonials">Testimonial</a></li>
+                    <li><a href="/contact" class="active">Contact</a></li>
+                    <li><a href="/register">Register</a></li>
                 </ul>
             </nav>
         </div>
@@ -84,7 +84,7 @@
 
                     <section class="contact-form-panel" aria-label="Contact form">
                         <p class="contact-panel-title">Send a Message</p>
-                        <form class="contact-form" id="contactForm" data-whatsapp="94705681574" action="#" method="post">
+                        <form class="contact-form" id="contactForm" data-api="/api/contact" action="/api/contact" method="post">
                             <div class="form-grid">
                                 <label>
                                     Full Name
@@ -112,6 +112,7 @@
                             </label>
 
                             <button type="submit" class="contact-submit-btn">Send Message</button>
+                            <p class="form-status" id="contactFormStatus" aria-live="polite"></p>
                         </form>
                     </section>
                 </div>
@@ -119,6 +120,7 @@
         </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="futuremaker.js"></script>
 </body>
 </html>
