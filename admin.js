@@ -1304,6 +1304,25 @@
          }
 
          const file = fileInput.files[0];
+         const allowedMimeTypes = [
+            'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/quicktime', 'video/x-matroska',
+            'application/pdf',
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'application/zip', 'application/x-zip-compressed',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+         ];
+
+         if (file.type && !allowedMimeTypes.includes(file.type)) {
+            if (statusEl) {
+               statusEl.textContent = `Unsupported file type: ${file.type}. Use PDF, image, video, Office document, or ZIP.`;
+               statusEl.className = 'admin-status is-error';
+            }
+            return;
+         }
+
          const formData = new FormData();
          formData.append('file', file);
 
@@ -1325,6 +1344,9 @@
             try { result = await response.json(); } catch (_) { result = {}; }
 
             if (!response.ok) {
+               if (response.status === 401) {
+                  throw new Error('Admin session expired. Log in again and retry the upload.');
+               }
                throw new Error(result.error || 'Upload failed.');
             }
 
