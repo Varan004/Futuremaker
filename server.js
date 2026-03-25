@@ -52,6 +52,7 @@ const pageRoutes = [
   { route: '/about-us', file: 'Aboutus.html' },
   { route: '/services', file: 'Service.html' },
   { route: '/opportunity', file: 'Opportunity.html' },
+  { route: '/lms', file: 'LMS.html' },
   { route: '/updates', file: 'Updates.html' },
   { route: '/testimonials', file: 'Testimonial.html' },
   { route: '/contact', file: 'Contact.html' },
@@ -66,6 +67,7 @@ const legacyRedirects = {
   '/Aboutus.html': '/about-us',
   '/Service.html': '/services',
   '/Opportunity.html': '/opportunity',
+  '/LMS.html': '/lms',
   '/Updates.html': '/updates',
   '/Testimonial.html': '/testimonials',
   '/Contact.html': '/contact',
@@ -603,6 +605,14 @@ function sortLmsUpdates(records) {
   });
 }
 
+function sortLmsCourses(records) {
+  return [...records].sort((left, right) => {
+    const featuredDelta = Number(Boolean(right.isFeatured)) - Number(Boolean(left.isFeatured));
+    if (featuredDelta !== 0) return featuredDelta;
+    return new Date(right.submittedAt).getTime() - new Date(left.submittedAt).getTime();
+  });
+}
+
 function sanitizeLmsUpdate(record) {
   if (!record) {
     return null;
@@ -639,6 +649,66 @@ function validateLmsUpdatePayload(body) {
 
   if (!isNonEmptyString(payload.body) || payload.body.length < 15) {
     return { error: 'Update details must be at least 15 characters.' };
+  }
+
+  return { payload };
+}
+
+function sanitizeLmsCourse(record) {
+  if (!record) {
+    return null;
+  }
+
+  const tags = Array.isArray(record.tags)
+    ? record.tags.map((tag) => sanitizeText(tag)).filter(Boolean)
+    : [];
+
+  return {
+    id: sanitizeText(record.id),
+    title: sanitizeText(record.title),
+    summary: sanitizeText(record.summary),
+    level: sanitizeText(record.level),
+    duration: sanitizeText(record.duration),
+    tags,
+    isPublished: Boolean(record.isPublished),
+    isFeatured: Boolean(record.isFeatured),
+    submittedAt: record.submittedAt || null,
+    updatedAt: record.updatedAt || null
+  };
+}
+
+function validateLmsCoursePayload(body) {
+  const tags = Array.isArray(body.tags)
+    ? body.tags.map((tag) => sanitizeText(tag)).filter(Boolean)
+    : sanitizeText(body.tags)
+      .split(',')
+      .map((tag) => sanitizeText(tag))
+      .filter(Boolean);
+
+  const payload = {
+    title: sanitizeText(body.title),
+    summary: sanitizeText(body.summary),
+    level: sanitizeText(body.level || 'Beginner'),
+    duration: sanitizeText(body.duration || '4 weeks'),
+    tags,
+    isPublished: Boolean(body.isPublished),
+    isFeatured: Boolean(body.isFeatured)
+  };
+
+  if (!isNonEmptyString(payload.title) || payload.title.length < 4) {
+    return { error: 'Course title must be at least 4 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.summary) || payload.summary.length < 12) {
+    return { error: 'Course summary must be at least 12 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.level)) {
+    return { error: 'Course level is required.' };
+  }
+
+  if (!isNonEmptyString(payload.duration)) {
+    return { error: 'Course duration is required.' };
   }
 
   return { payload };
@@ -1036,6 +1106,7 @@ app.get('/api', async (_req, res) => {
       health: '/api/health',
       programs: '/api/programs',
       opportunities: '/api/opportunities',
+      lmsCourses: '/api/lms-courses',
       lmsUpdates: '/api/lms-updates',
       stats: '/api/stats',
       contact: '/api/contact',
@@ -1087,6 +1158,21 @@ app.get('/api/lms-updates', async (_req, res) => {
   return res.json({
     items: visibleItems,
     total: visibleItems.length
+  });
+});
+
+app.get('/api/lms-courses', async (_req, res) => {
+  const courses = await readRecords('lmsCourses');
+  const visibleItems = sortLmsCourses(
+    courses
+      .map((item) => sanitizeLmsCourse(item))
+      .filter((item) => item && item.isPublished)
+  );
+
+  return res.json({
+    items: visibleItems,
+    total: visibleItems.length,
+    featured: visibleItems.filter((item) => item.isFeatured).length
   });
 });
 
@@ -1434,6 +1520,91 @@ app.delete('/api/admin/lms-updates/:id', requireAdminAuth, async (req, res) => {
   }
 
   return res.json({ message: 'LMS update deleted.' });
+});
+
+app.get('/api/admin/lms-courses', requireAdminAuth, async (_req, res) => {
+  const courses = await readRecords('lmsCourses');
+  const items = sortLmsCourses(
+    courses
+      .map((item) => sanitizeLmsCourse(item))
+      .filter(Boolean)
+  );
+
+  return res.json({
+    items,
+    total: items.length,
+    published: items.filter((item) => item.isPublished).length,
+    featured: items.filter((item) => item.isFeatured).length
+  });
+});
+
+app.post('/api/admin/lms-courses', requireAdminAuth, async (req, res) => {
+  const { error, payload } = validateLmsCoursePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const now = new Date().toISOString();
+  const record = {
+    id: `lmscourse_${Date.now()}`,
+    submittedAt: now,
+    updatedAt: now,
+    ...payload
+  };
+
+  await appendRecord('lmsCourses', record);
+  return res.status(201).json({
+    message: 'LMS course created.',
+    item: sanitizeLmsCourse(record)
+  });
+});
+
+app.put('/api/admin/lms-courses/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Course id is required.' });
+  }
+
+  const { error, payload } = validateLmsCoursePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const db = await getDb();
+  const updatedItem = await db.collection('lmsCourses').findOneAndUpdate(
+    { id },
+    {
+      $set: {
+        ...payload,
+        updatedAt: new Date().toISOString()
+      }
+    },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) {
+    return res.status(404).json({ error: 'LMS course not found.' });
+  }
+
+  return res.json({
+    message: 'LMS course updated.',
+    item: sanitizeLmsCourse(updatedItem)
+  });
+});
+
+app.delete('/api/admin/lms-courses/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Course id is required.' });
+  }
+
+  const db = await getDb();
+  const result = await db.collection('lmsCourses').deleteOne({ id });
+  if (!result.deletedCount) {
+    return res.status(404).json({ error: 'LMS course not found.' });
+  }
+
+  return res.json({ message: 'LMS course deleted.' });
 });
 
 // ── Admin: Team User Management ─────────────────────────────────────────────

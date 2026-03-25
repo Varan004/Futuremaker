@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/jpeg" href="img/FUTUMAKERS LOGO.jpg">
-    <title>FutureMakers | LMS Updates</title>
+    <title>FutureMakers | LMS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="futuremaker.css">
 </head>
-<body class="updates-page">
+<body class="lms-page">
     <div class="ambient-bg">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -34,8 +34,8 @@
                     <li><a href="/about-us">About Us</a></li>
                     <li><a href="/services">Services</a></li>
                     <li><a href="/opportunity">Opportunity</a></li>
-                    <li><a href="/lms">LMS</a></li>
-                    <li><a href="/updates" class="active">Updates</a></li>
+                    <li><a href="/lms" class="active">LMS</a></li>
+                    <li><a href="/updates">Updates</a></li>
                     <li><a href="/testimonials">Testimonial</a></li>
                     <li><a href="/contact">Contact</a></li>
                     <li><a href="/register">Register</a></li>
@@ -44,32 +44,29 @@
         </div>
     </header>
 
-    <main class="updates-main">
-        <section class="updates-hero">
-            <div class="updates-hero-content">
-                <span class="hero-badge">LMS Announcements</span>
-                <h1 class="section-title">Latest Learning <span class="gradient-text">Updates</span></h1>
-                <p class="section-desc">Track new classes, lesson drops, and important notices from the FutureMakers LMS team.</p>
-            </div>
+    <main class="lms-main">
+        <section class="lms-hero">
+            <span class="hero-badge">Learning Management System</span>
+            <h1 class="section-title">FutureMakers <span class="gradient-text">LMS Courses</span></h1>
+            <p class="section-desc">Browse published courses, discover featured tracks, and follow your learning roadmap step-by-step.</p>
         </section>
 
-        <section class="updates-list-section">
-            <div class="updates-list-head">
-                <h2>Published Updates</h2>
-                <span id="updatesCountMeta">0 updates</span>
+        <section class="lms-course-section">
+            <div class="lms-list-head">
+                <h2>Available Courses</h2>
+                <span id="lmsCourseMeta">0 courses</span>
             </div>
-            <p class="admin-status" id="updatesStatus" aria-live="polite">Loading updates...</p>
-            <div class="updates-grid" id="updatesGrid">
-                <article class="update-card">
+            <p class="admin-status" id="lmsStatus" aria-live="polite">Loading courses...</p>
+            <div class="lms-grid" id="lmsGrid">
+                <article class="lms-card">
                     <h3>Loading...</h3>
-                    <p>Please wait while updates are fetched.</p>
+                    <p>Please wait while courses are loaded.</p>
                 </article>
             </div>
         </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="futuremaker.js"></script>
-    <script src="updates.js"></script>
+    <script src="lms.js"></script>
 </body>
 </html>

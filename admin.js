@@ -15,15 +15,21 @@
    const lmsUpdatesSection = document.getElementById('adminLmsUpdatesSection');
    const lmsUpdatesPanel = document.getElementById('adminLmsUpdatesPanel');
    const lmsUpdatesToggleBtn = document.getElementById('adminLmsUpdatesToggleBtn');
+   const lmsCourseTableBody = document.getElementById('lmsCourseTableBody');
+   const lmsCoursesSection = document.getElementById('adminLmsCoursesSection');
+   const lmsCoursesPanel = document.getElementById('adminLmsCoursesPanel');
+   const lmsCoursesToggleBtn = document.getElementById('adminLmsCoursesToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
    let teamUserDeleteModal = null;
    let lmsUpdateModal = null;
+   let lmsCourseModal = null;
    let currentEditUsername = null;
    let currentResetUsername = null;
    let currentDeleteUsername = null;
    let currentLmsUpdateId = null;
+   let currentLmsCourseId = null;
 
    if (!authCard || !dashboard || !loginForm || !loginStatusElement || !statusElement || !contactTableBody || !registrationTableBody) {
       return;
@@ -152,6 +158,20 @@
       }
    }
 
+   function setLmsCoursesPanelState(isOpen) {
+      if (!lmsCoursesPanel || !lmsCoursesToggleBtn) {
+         return;
+      }
+
+      lmsCoursesPanel.hidden = !isOpen;
+      lmsCoursesToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      lmsCoursesToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (lmsCoursesSection) {
+         lmsCoursesSection.classList.toggle('is-collapsed', !isOpen);
+      }
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -231,7 +251,7 @@
          }
       }
 
-      await Promise.all([loadTeamUsers(), loadLmsUpdates()]);
+      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses()]);
    }
 
    async function checkAdminSession() {
@@ -311,6 +331,7 @@
             renderEmptyRow(registrationTableBody, 13, 'Login required.');
             if (teamUserTableBody) renderEmptyRow(teamUserTableBody, 7, 'Login required.');
             if (lmsUpdateTableBody) renderEmptyRow(lmsUpdateTableBody, 7, 'Login required.');
+            if (lmsCourseTableBody) renderEmptyRow(lmsCourseTableBody, 7, 'Login required.');
          }
       });
    }
@@ -331,6 +352,14 @@
       setLmsUpdatesPanelState(true);
    }
 
+   if (lmsCoursesToggleBtn) {
+      lmsCoursesToggleBtn.addEventListener('click', function () {
+         const isOpen = lmsCoursesToggleBtn.getAttribute('aria-expanded') === 'true';
+         setLmsCoursesPanelState(!isOpen);
+      });
+      setLmsCoursesPanelState(true);
+   }
+
    // ─── Team User Management ─────────────────────────────────────
 
    function initTeamModals() {
@@ -339,10 +368,12 @@
       const resetEl = document.getElementById('teamUserResetModal');
       const delEl = document.getElementById('teamUserDeleteModal');
       const lmsEl = document.getElementById('lmsUpdateModal');
+      const lmsCourseEl = document.getElementById('lmsCourseModal');
       if (tuEl) teamUserModal = new bootstrap.Modal(tuEl);
       if (resetEl) teamUserResetModal = new bootstrap.Modal(resetEl);
       if (delEl) teamUserDeleteModal = new bootstrap.Modal(delEl);
       if (lmsEl) lmsUpdateModal = new bootstrap.Modal(lmsEl);
+      if (lmsCourseEl) lmsCourseModal = new bootstrap.Modal(lmsCourseEl);
    }
 
    function renderTeamUsers(users) {
@@ -799,6 +830,198 @@
             setLmsFormStatus(error.message || 'Unable to save LMS update.', true);
          } finally {
             saveLmsUpdateBtn.disabled = false;
+         }
+      });
+   }
+
+   // ─── LMS Courses Management ───────────────────────────────────
+
+   function clearLmsCourseFormStatus() {
+      const el = document.getElementById('adminLmsCourseFormStatus');
+      if (el) {
+         el.textContent = '';
+         el.className = 'admin-status';
+      }
+   }
+
+   function setLmsCourseFormStatus(message, isError) {
+      const el = document.getElementById('adminLmsCourseFormStatus');
+      if (!el) return;
+      el.textContent = message;
+      el.classList.toggle('is-error', Boolean(isError));
+      el.classList.toggle('is-success', !isError);
+   }
+
+   function openAddLmsCourseModal() {
+      currentLmsCourseId = null;
+      const form = document.getElementById('adminLmsCourseForm');
+      const label = document.getElementById('lmsCourseModalLabel');
+      if (form) form.reset();
+      if (label) label.textContent = 'Add LMS Course';
+      clearLmsCourseFormStatus();
+      if (lmsCourseModal) lmsCourseModal.show();
+   }
+
+   function openEditLmsCourseModal(item) {
+      currentLmsCourseId = item.id;
+      const label = document.getElementById('lmsCourseModalLabel');
+      if (label) label.textContent = 'Edit LMS Course';
+
+      const titleEl = document.getElementById('adminCourseTitle');
+      const summaryEl = document.getElementById('adminCourseSummary');
+      const levelEl = document.getElementById('adminCourseLevel');
+      const durationEl = document.getElementById('adminCourseDuration');
+      const tagsEl = document.getElementById('adminCourseTags');
+      const publishedEl = document.getElementById('adminCoursePublished');
+      const featuredEl = document.getElementById('adminCourseFeatured');
+
+      if (titleEl) titleEl.value = item.title || '';
+      if (summaryEl) summaryEl.value = item.summary || '';
+      if (levelEl) levelEl.value = item.level || '';
+      if (durationEl) durationEl.value = item.duration || '';
+      if (tagsEl) tagsEl.value = Array.isArray(item.tags) ? item.tags.join(', ') : '';
+      if (publishedEl) publishedEl.checked = Boolean(item.isPublished);
+      if (featuredEl) featuredEl.checked = Boolean(item.isFeatured);
+
+      clearLmsCourseFormStatus();
+      if (lmsCourseModal) lmsCourseModal.show();
+   }
+
+   function renderLmsCourses(items) {
+      const meta = document.getElementById('adminLmsCourseMeta');
+      if (meta) {
+         meta.textContent = `${items.length} course${items.length === 1 ? '' : 's'}`;
+      }
+      setSummaryText('adminLmsCourseCount', items.length);
+
+      if (!lmsCourseTableBody) {
+         return;
+      }
+
+      if (!items.length) {
+         renderEmptyRow(lmsCourseTableBody, 7, 'No LMS courses yet.');
+         return;
+      }
+
+      lmsCourseTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.title));
+         row.appendChild(createCell(item.summary));
+         row.appendChild(createCell(item.level));
+         row.appendChild(createCell(item.duration));
+         row.appendChild(createCell(item.isPublished ? 'Yes' : 'No'));
+         row.appendChild(createCell(item.isFeatured ? 'Yes' : 'No'));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+
+         const editBtn = document.createElement('button');
+         editBtn.type = 'button';
+         editBtn.textContent = 'Edit';
+         editBtn.className = 'admin-outline-btn';
+         editBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         editBtn.addEventListener('click', function () { openEditLmsCourseModal(item); });
+
+         const deleteBtn = document.createElement('button');
+         deleteBtn.type = 'button';
+         deleteBtn.textContent = 'Delete';
+         deleteBtn.className = 'admin-outline-btn admin-delete-btn';
+         deleteBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         deleteBtn.addEventListener('click', async function () {
+            const ok = window.confirm('Delete this LMS course? This action cannot be undone.');
+            if (!ok) {
+               return;
+            }
+
+            deleteBtn.disabled = true;
+            try {
+               await requestJson('/api/admin/lms-courses/' + item.id, {
+                  method: 'DELETE'
+               }, 'Unable to delete LMS course.');
+               await loadLmsCourses();
+            } catch (error) {
+               setStatus(error.message || 'Unable to delete LMS course.', true);
+            } finally {
+               deleteBtn.disabled = false;
+            }
+         });
+
+         actionCell.appendChild(editBtn);
+         actionCell.appendChild(deleteBtn);
+         row.appendChild(actionCell);
+         lmsCourseTableBody.appendChild(row);
+      });
+   }
+
+   async function loadLmsCourses() {
+      if (!lmsCourseTableBody) {
+         return;
+      }
+
+      try {
+         const result = await requestJson('/api/admin/lms-courses', {}, 'Unable to load LMS courses.');
+         renderLmsCourses(result.items || []);
+      } catch (error) {
+         renderEmptyRow(lmsCourseTableBody, 7, error.message || 'Unable to load LMS courses.');
+      }
+   }
+
+   const addLmsCourseBtn = document.getElementById('adminAddLmsCourseBtn');
+   if (addLmsCourseBtn) {
+      addLmsCourseBtn.addEventListener('click', openAddLmsCourseModal);
+   }
+
+   const saveLmsCourseBtn = document.getElementById('adminLmsCourseSaveBtn');
+   if (saveLmsCourseBtn) {
+      saveLmsCourseBtn.addEventListener('click', async function () {
+         saveLmsCourseBtn.disabled = true;
+         setLmsCourseFormStatus('Saving…', false);
+
+         function value(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+         }
+
+         function checked(id) {
+            const el = document.getElementById(id);
+            return el ? el.checked : false;
+         }
+
+         const body = {
+            title: value('adminCourseTitle'),
+            summary: value('adminCourseSummary'),
+            level: value('adminCourseLevel'),
+            duration: value('adminCourseDuration'),
+            tags: value('adminCourseTags')
+               .split(',')
+               .map(function (tag) { return tag.trim(); })
+               .filter(Boolean),
+            isPublished: checked('adminCoursePublished'),
+            isFeatured: checked('adminCourseFeatured')
+         };
+
+         const isEdit = Boolean(currentLmsCourseId);
+
+         try {
+            const targetUrl = isEdit
+               ? '/api/admin/lms-courses/' + currentLmsCourseId
+               : '/api/admin/lms-courses';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            await requestJson(targetUrl, {
+               method: method,
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(body)
+            }, isEdit ? 'Unable to update LMS course.' : 'Unable to create LMS course.');
+
+            if (lmsCourseModal) lmsCourseModal.hide();
+            await loadLmsCourses();
+            setStatus('LMS course saved successfully.', false);
+         } catch (error) {
+            setLmsCourseFormStatus(error.message || 'Unable to save LMS course.', true);
+         } finally {
+            saveLmsCourseBtn.disabled = false;
          }
       });
    }
