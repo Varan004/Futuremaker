@@ -64,9 +64,13 @@
 
    async function requestJson(url, options, fallbackError) {
       let response;
+      const requestOptions = {
+         credentials: 'same-origin',
+         ...(options || {})
+      };
 
       try {
-         response = await fetch(resolveApiUrl(url), options || {});
+         response = await fetch(resolveApiUrl(url), requestOptions);
       } catch (_networkError) {
          throw new Error('Unable to reach backend API. Start Node server and open this site from that server URL.');
       }
@@ -1334,6 +1338,7 @@
             try {
                response = await fetch(resolveApiUrl('/api/admin/lms-upload'), {
                   method: 'POST',
+                  credentials: 'same-origin',
                   body: formData
                });
             } catch (_networkError) {
