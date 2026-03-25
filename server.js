@@ -23,6 +23,12 @@ const teamSessionSecret = process.env.TEAM_SESSION_SECRET || crypto
   .digest('hex');
 const teamSessionCookieName = 'futuremakers_team_session';
 const teamSessionTtlMs = 1000 * 60 * 60 * 8;
+const applicantSessionSecret = process.env.APPLICANT_SESSION_SECRET || crypto
+  .createHash('sha256')
+  .update(`${__dirname}:${adminSessionSecret}:applicant`)
+  .digest('hex');
+const applicantSessionCookieName = 'futuremakers_applicant_session';
+const applicantSessionTtlMs = 1000 * 60 * 60 * 8;
 
 let _mongoDb = null;
 
@@ -525,6 +531,85 @@ function clearTeamSessionCookie(res) {
   });
 }
 
+function createApplicantSessionToken(applicationCode) {
+  const expiresAt = String(Date.now() + applicantSessionTtlMs);
+  const payload = `${applicationCode}:${expiresAt}`;
+  const signature = crypto
+    .createHmac('sha256', applicantSessionSecret)
+    .update(payload)
+    .digest('hex');
+
+  return `${Buffer.from(payload, 'utf8').toString('base64url')}.${signature}`;
+}
+
+function readApplicantSession(req) {
+  const cookies = parseCookies(req);
+  const token = cookies[applicantSessionCookieName];
+
+  if (!token) {
+    return null;
+  }
+
+  const [encodedPayload, signature] = token.split('.');
+  if (!encodedPayload || !signature) {
+    return null;
+  }
+
+  let payload;
+
+  try {
+    payload = Buffer.from(encodedPayload, 'base64url').toString('utf8');
+  } catch {
+    return null;
+  }
+
+  const [applicationCode, expiresAt] = payload.split(':');
+  if (!applicationCode || !expiresAt || !/^\d+$/.test(expiresAt)) {
+    return null;
+  }
+
+  const expectedSignature = crypto
+    .createHmac('sha256', applicantSessionSecret)
+    .update(`${applicationCode}:${expiresAt}`)
+    .digest('hex');
+
+  const providedBuffer = Buffer.from(signature, 'utf8');
+  const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return null;
+  }
+
+  if (!crypto.timingSafeEqual(providedBuffer, expectedBuffer)) {
+    return null;
+  }
+
+  if (Number(expiresAt) <= Date.now()) {
+    return null;
+  }
+
+  return { applicationCode };
+}
+
+function setApplicantSessionCookie(res, applicationCode) {
+  res.cookie(applicantSessionCookieName, createApplicantSessionToken(applicationCode), {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: applicantSessionTtlMs,
+    path: '/'
+  });
+}
+
+function clearApplicantSessionCookie(res) {
+  res.clearCookie(applicantSessionCookieName, {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/'
+  });
+}
+
 function requireAdminAuth(req, res, next) {
   if (!hasValidAdminSession(req)) {
     return res.status(401).json({
@@ -866,6 +951,53 @@ async function getAuthenticatedTeamUser(req) {
   return findTeamUser(session.username);
 }
 
+function sanitizeApplicantProfile(registration) {
+  if (!registration) {
+    return null;
+  }
+
+  return {
+    applicationCode: sanitizeText(registration.applicationCode),
+    fullName: sanitizeText(registration.fullName),
+    email: sanitizeText(registration.email).toLowerCase(),
+    program: sanitizeText(registration.programLabel || registration.program),
+    submittedAt: registration.submittedAt || null
+  };
+}
+
+async function findRegistrationByApplicationCode(applicationCode) {
+  const safeCode = sanitizeText(applicationCode).toUpperCase();
+  if (!safeCode) return null;
+  const db = await getDb();
+  return db.collection('registrations').findOne(
+    { applicationCode: safeCode },
+    { projection: { _id: 0 } }
+  );
+}
+
+async function getAuthenticatedApplicant(req) {
+  const session = readApplicantSession(req);
+  if (!session) {
+    return null;
+  }
+
+  const registration = await findRegistrationByApplicationCode(session.applicationCode);
+  return registration ? sanitizeApplicantProfile(registration) : null;
+}
+
+async function requireApplicantAuth(req, res, next) {
+  const applicant = await getAuthenticatedApplicant(req);
+
+  if (!applicant) {
+    return res.status(401).json({
+      error: 'Applicant login required.'
+    });
+  }
+
+  req.applicant = applicant;
+  return next();
+}
+
 async function requireTeamAuth(req, res, next) {
   const teamUser = await getAuthenticatedTeamUser(req);
 
@@ -1117,7 +1249,11 @@ app.get('/api', async (_req, res) => {
       teamLogin: '/api/team/login',
       teamForgotPassword: '/api/team/forgot-password',
       teamLogout: '/api/team/logout',
-      teamDashboard: '/api/team/dashboard'
+      teamDashboard: '/api/team/dashboard',
+      applicantSession: '/api/applicant/session',
+      applicantLogin: '/api/applicant/login',
+      applicantLogout: '/api/applicant/logout',
+      applicantLms: '/api/applicant/lms'
     },
     totals: {
       contactSubmissions: contactSubmissions.length,
@@ -1337,6 +1473,138 @@ app.get('/api/team/dashboard', requireTeamAuth, async (req, res) => {
       submittedAt: item.submittedAt,
       applicationCode: item.applicationCode
     }))
+  });
+});
+
+app.get('/api/applicant/session', async (req, res) => {
+  const applicant = await getAuthenticatedApplicant(req);
+
+  return res.json({
+    authenticated: Boolean(applicant),
+    applicant
+  });
+});
+
+app.post('/api/applicant/login', async (req, res) => {
+  const applicationCode = sanitizeText(req.body.applicationCode).toUpperCase();
+  const email = sanitizeText(req.body.email).toLowerCase();
+
+  if (!isNonEmptyString(applicationCode) || !isNonEmptyString(email)) {
+    return res.status(400).json({
+      error: 'Application code and email are required.'
+    });
+  }
+
+  if (!isValidEmail(email)) {
+    return res.status(400).json({
+      error: 'A valid email address is required.'
+    });
+  }
+
+  const registration = await findRegistrationByApplicationCode(applicationCode);
+  if (!registration || sanitizeText(registration.email).toLowerCase() !== email) {
+    clearApplicantSessionCookie(res);
+    return res.status(401).json({
+      error: 'Invalid applicant credentials.'
+    });
+  }
+
+  setApplicantSessionCookie(res, applicationCode);
+  return res.json({
+    message: 'Applicant login successful.',
+    applicant: sanitizeApplicantProfile(registration)
+  });
+});
+
+app.post('/api/applicant/logout', (_req, res) => {
+  clearApplicantSessionCookie(res);
+  return res.json({
+    message: 'Applicant logout successful.'
+  });
+});
+
+app.get('/api/applicant/lms', requireApplicantAuth, async (req, res) => {
+  const db = await getDb();
+  const [courses, progressRows] = await Promise.all([
+    readRecords('lmsCourses'),
+    db.collection('applicantProgress').find(
+      { applicationCode: req.applicant.applicationCode },
+      { projection: { _id: 0 } }
+    ).toArray()
+  ]);
+
+  const progressMap = new Map(
+    progressRows.map((row) => [sanitizeText(row.courseId), row])
+  );
+
+  const items = sortLmsCourses(
+    courses
+      .map((item) => sanitizeLmsCourse(item))
+      .filter((item) => item && item.isPublished)
+  ).map((course) => {
+    const progress = progressMap.get(course.id);
+    return {
+      ...course,
+      progressStatus: sanitizeText(progress && progress.status) || 'not-started',
+      progressUpdatedAt: progress && progress.updatedAt ? progress.updatedAt : null
+    };
+  });
+
+  return res.json({
+    applicant: req.applicant,
+    items,
+    total: items.length
+  });
+});
+
+app.put('/api/applicant/lms/progress/:courseId', requireApplicantAuth, async (req, res) => {
+  const courseId = sanitizeText(req.params.courseId);
+  const status = sanitizeText(req.body.status).toLowerCase();
+  const allowedStatuses = ['not-started', 'in-progress', 'completed'];
+
+  if (!courseId) {
+    return res.status(400).json({ error: 'Course id is required.' });
+  }
+
+  if (!allowedStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid progress status.' });
+  }
+
+  const db = await getDb();
+  const course = await db.collection('lmsCourses').findOne(
+    { id: courseId, isPublished: true },
+    { projection: { _id: 0 } }
+  );
+
+  if (!course) {
+    return res.status(404).json({ error: 'Published course not found.' });
+  }
+
+  const now = new Date().toISOString();
+  await db.collection('applicantProgress').updateOne(
+    {
+      applicationCode: req.applicant.applicationCode,
+      courseId
+    },
+    {
+      $set: {
+        status,
+        updatedAt: now
+      },
+      $setOnInsert: {
+        applicationCode: req.applicant.applicationCode,
+        courseId,
+        submittedAt: now
+      }
+    },
+    { upsert: true }
+  );
+
+  return res.json({
+    message: 'Progress updated successfully.',
+    courseId,
+    status,
+    updatedAt: now
   });
 });
 

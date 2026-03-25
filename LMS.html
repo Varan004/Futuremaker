@@ -51,6 +51,37 @@
             <p class="section-desc">Browse published courses, discover featured tracks, and follow your learning roadmap step-by-step.</p>
         </section>
 
+        <section class="lms-auth-shell" id="lmsAuthShell">
+            <article class="lms-auth-card" id="lmsAuthCard">
+                <h2>Applicant LMS Login</h2>
+                <p>Use your registration application code and email to open your personal LMS workspace.</p>
+                <form id="lmsLoginForm" class="lms-login-form" novalidate>
+                    <label>
+                        Application Code
+                        <input type="text" id="lmsApplicationCode" name="applicationCode" placeholder="FM-YYYYMMDD-XXXXXX" required>
+                    </label>
+                    <label>
+                        Email
+                        <input type="email" id="lmsApplicantEmail" name="email" placeholder="you@example.com" required>
+                    </label>
+                    <button type="submit" class="contact-submit-btn">Login to My LMS</button>
+                </form>
+                <p class="admin-status" id="lmsAuthStatus" aria-live="polite">Checking applicant session...</p>
+            </article>
+
+            <article class="lms-applicant-card" id="lmsApplicantCard" hidden>
+                <div class="lms-applicant-head">
+                    <div>
+                        <p class="hero-badge">Personal Workspace</p>
+                        <h2 id="lmsApplicantName">Applicant</h2>
+                        <p id="lmsApplicantMeta">Program details</p>
+                    </div>
+                    <button type="button" id="lmsLogoutBtn" class="admin-outline-btn">Logout</button>
+                </div>
+                <p class="admin-status" id="lmsSessionStatus" aria-live="polite">Ready.</p>
+            </article>
+        </section>
+
         <section class="lms-course-section">
             <div class="lms-list-head">
                 <h2>Available Courses</h2>
