@@ -2187,39 +2187,43 @@ app.post('/api/admin/team-users/:username/reset-password', requireAdminAuth, asy
   return res.json({ message: `Password for "${username}" reset successfully.` });
 });
 
-app.post('/api/admin/lms-upload', requireAdminAuth, lmsFileUpload.single('file'), async (req, res) => {
+app.post('/api/admin/lms-upload', requireAdminAuth, lmsFileUpload.single('file'), async (req, res, next) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file provided.' });
   }
 
-  const db = await getDb();
-  const bucket = new GridFSBucket(db, { bucketName: 'lmsFiles' });
-  const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+  try {
+    const db = await getDb();
+    const bucket = new GridFSBucket(db, { bucketName: 'lmsFiles' });
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-  const uploadStream = bucket.openUploadStream(safeName, {
-    contentType: req.file.mimetype,
-    metadata: {
-      uploadedAt: new Date().toISOString(),
-      originalName: req.file.originalname,
-      size: req.file.size
-    }
-  });
+    const uploadStream = bucket.openUploadStream(safeName, {
+      contentType: req.file.mimetype,
+      metadata: {
+        uploadedAt: new Date().toISOString(),
+        originalName: req.file.originalname,
+        size: req.file.size
+      }
+    });
 
-  await new Promise((resolve, reject) => {
-    uploadStream.on('finish', resolve);
-    uploadStream.on('error', reject);
-    uploadStream.end(req.file.buffer);
-  });
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+      uploadStream.end(req.file.buffer);
+    });
 
-  const fileId = uploadStream.id.toString();
-  return res.status(201).json({
-    message: 'File uploaded successfully.',
-    fileId,
-    url: `/api/files/${fileId}`,
-    filename: req.file.originalname,
-    size: req.file.size,
-    mimeType: req.file.mimetype
-  });
+    const fileId = uploadStream.id.toString();
+    return res.status(201).json({
+      message: 'File uploaded successfully.',
+      fileId,
+      url: `/api/files/${fileId}`,
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype
+    });
+  } catch (err) {
+    return next(err);
+  }
 });
 
 app.get('/api/files/:fileId', async (req, res) => {
@@ -2286,6 +2290,15 @@ app.get('/api/health', (_req, res) => {
 
 app.use((err, _req, res, _next) => {
   console.error(err);
+  if (err && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'File is too large. Maximum size is 100 MB.' });
+  }
+  if (err && err.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ error: 'Unexpected file field.' });
+  }
+  if (err && err.message && err.message.startsWith('File type not allowed')) {
+    return res.status(400).json({ error: err.message });
+  }
   res.status(500).json({ error: 'Internal server error.' });
 });
 
