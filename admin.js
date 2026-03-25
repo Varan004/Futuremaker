@@ -16,20 +16,26 @@
    const lmsUpdatesPanel = document.getElementById('adminLmsUpdatesPanel');
    const lmsUpdatesToggleBtn = document.getElementById('adminLmsUpdatesToggleBtn');
    const lmsCourseTableBody = document.getElementById('lmsCourseTableBody');
+   const lmsResourceTableBody = document.getElementById('lmsResourceTableBody');
    const lmsCoursesSection = document.getElementById('adminLmsCoursesSection');
    const lmsCoursesPanel = document.getElementById('adminLmsCoursesPanel');
    const lmsCoursesToggleBtn = document.getElementById('adminLmsCoursesToggleBtn');
+   const lmsResourcesSection = document.getElementById('adminLmsResourcesSection');
+   const lmsResourcesPanel = document.getElementById('adminLmsResourcesPanel');
+   const lmsResourcesToggleBtn = document.getElementById('adminLmsResourcesToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
    let teamUserDeleteModal = null;
    let lmsUpdateModal = null;
    let lmsCourseModal = null;
+   let lmsResourceModal = null;
    let currentEditUsername = null;
    let currentResetUsername = null;
    let currentDeleteUsername = null;
    let currentLmsUpdateId = null;
    let currentLmsCourseId = null;
+   let currentLmsResourceId = null;
 
    if (!authCard || !dashboard || !loginForm || !loginStatusElement || !statusElement || !contactTableBody || !registrationTableBody) {
       return;
@@ -172,6 +178,20 @@
       }
    }
 
+   function setLmsResourcesPanelState(isOpen) {
+      if (!lmsResourcesPanel || !lmsResourcesToggleBtn) {
+         return;
+      }
+
+      lmsResourcesPanel.hidden = !isOpen;
+      lmsResourcesToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      lmsResourcesToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (lmsResourcesSection) {
+         lmsResourcesSection.classList.toggle('is-collapsed', !isOpen);
+      }
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -251,7 +271,7 @@
          }
       }
 
-      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses()]);
+      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses(), loadLmsResources()]);
    }
 
    async function checkAdminSession() {
@@ -332,6 +352,7 @@
             if (teamUserTableBody) renderEmptyRow(teamUserTableBody, 7, 'Login required.');
             if (lmsUpdateTableBody) renderEmptyRow(lmsUpdateTableBody, 7, 'Login required.');
             if (lmsCourseTableBody) renderEmptyRow(lmsCourseTableBody, 7, 'Login required.');
+            if (lmsResourceTableBody) renderEmptyRow(lmsResourceTableBody, 6, 'Login required.');
          }
       });
    }
@@ -360,6 +381,14 @@
       setLmsCoursesPanelState(true);
    }
 
+   if (lmsResourcesToggleBtn) {
+      lmsResourcesToggleBtn.addEventListener('click', function () {
+         const isOpen = lmsResourcesToggleBtn.getAttribute('aria-expanded') === 'true';
+         setLmsResourcesPanelState(!isOpen);
+      });
+      setLmsResourcesPanelState(true);
+   }
+
    // ─── Team User Management ─────────────────────────────────────
 
    function initTeamModals() {
@@ -369,11 +398,13 @@
       const delEl = document.getElementById('teamUserDeleteModal');
       const lmsEl = document.getElementById('lmsUpdateModal');
       const lmsCourseEl = document.getElementById('lmsCourseModal');
+      const lmsResourceEl = document.getElementById('lmsResourceModal');
       if (tuEl) teamUserModal = new bootstrap.Modal(tuEl);
       if (resetEl) teamUserResetModal = new bootstrap.Modal(resetEl);
       if (delEl) teamUserDeleteModal = new bootstrap.Modal(delEl);
       if (lmsEl) lmsUpdateModal = new bootstrap.Modal(lmsEl);
       if (lmsCourseEl) lmsCourseModal = new bootstrap.Modal(lmsCourseEl);
+      if (lmsResourceEl) lmsResourceModal = new bootstrap.Modal(lmsResourceEl);
    }
 
    function renderTeamUsers(users) {
@@ -1022,6 +1053,187 @@
             setLmsCourseFormStatus(error.message || 'Unable to save LMS course.', true);
          } finally {
             saveLmsCourseBtn.disabled = false;
+         }
+      });
+   }
+
+   // ─── LMS Resources Management ───────────────────────────────
+
+   function clearLmsResourceFormStatus() {
+      const el = document.getElementById('adminLmsResourceFormStatus');
+      if (el) {
+         el.textContent = '';
+         el.className = 'admin-status';
+      }
+   }
+
+   function setLmsResourceFormStatus(message, isError) {
+      const el = document.getElementById('adminLmsResourceFormStatus');
+      if (!el) return;
+      el.textContent = message;
+      el.classList.toggle('is-error', Boolean(isError));
+      el.classList.toggle('is-success', !isError);
+   }
+
+   function openAddLmsResourceModal() {
+      currentLmsResourceId = null;
+      const form = document.getElementById('adminLmsResourceForm');
+      const label = document.getElementById('lmsResourceModalLabel');
+      if (form) form.reset();
+      if (label) label.textContent = 'Add LMS Resource';
+      clearLmsResourceFormStatus();
+      if (lmsResourceModal) lmsResourceModal.show();
+   }
+
+   function openEditLmsResourceModal(item) {
+      currentLmsResourceId = item.id;
+      const label = document.getElementById('lmsResourceModalLabel');
+      if (label) label.textContent = 'Edit LMS Resource';
+
+      const titleEl = document.getElementById('adminResourceTitle');
+      const typeEl = document.getElementById('adminResourceType');
+      const urlEl = document.getElementById('adminResourceUrl');
+      const descEl = document.getElementById('adminResourceDescription');
+      const pubEl = document.getElementById('adminResourcePublished');
+
+      if (titleEl) titleEl.value = item.title || '';
+      if (typeEl) typeEl.value = item.type || 'file';
+      if (urlEl) urlEl.value = item.url || '';
+      if (descEl) descEl.value = item.description || '';
+      if (pubEl) pubEl.checked = Boolean(item.isPublished);
+
+      clearLmsResourceFormStatus();
+      if (lmsResourceModal) lmsResourceModal.show();
+   }
+
+   function renderLmsResources(items) {
+      const meta = document.getElementById('adminLmsResourceMeta');
+      if (meta) {
+         meta.textContent = `${items.length} resource${items.length === 1 ? '' : 's'}`;
+      }
+
+      if (!lmsResourceTableBody) {
+         return;
+      }
+
+      if (!items.length) {
+         renderEmptyRow(lmsResourceTableBody, 6, 'No LMS resources yet.');
+         return;
+      }
+
+      lmsResourceTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.title));
+         row.appendChild(createCell(item.type));
+         row.appendChild(createCell(item.description));
+         row.appendChild(createCell(item.url));
+         row.appendChild(createCell(item.isPublished ? 'Yes' : 'No'));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+
+         const editBtn = document.createElement('button');
+         editBtn.type = 'button';
+         editBtn.textContent = 'Edit';
+         editBtn.className = 'admin-outline-btn';
+         editBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         editBtn.addEventListener('click', function () { openEditLmsResourceModal(item); });
+
+         const deleteBtn = document.createElement('button');
+         deleteBtn.type = 'button';
+         deleteBtn.textContent = 'Delete';
+         deleteBtn.className = 'admin-outline-btn admin-delete-btn';
+         deleteBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         deleteBtn.addEventListener('click', async function () {
+            const ok = window.confirm('Delete this LMS resource? This action cannot be undone.');
+            if (!ok) {
+               return;
+            }
+
+            deleteBtn.disabled = true;
+            try {
+               await requestJson('/api/admin/lms-resources/' + item.id, {
+                  method: 'DELETE'
+               }, 'Unable to delete LMS resource.');
+               await loadLmsResources();
+            } catch (error) {
+               setStatus(error.message || 'Unable to delete LMS resource.', true);
+            } finally {
+               deleteBtn.disabled = false;
+            }
+         });
+
+         actionCell.appendChild(editBtn);
+         actionCell.appendChild(deleteBtn);
+         row.appendChild(actionCell);
+         lmsResourceTableBody.appendChild(row);
+      });
+   }
+
+   async function loadLmsResources() {
+      if (!lmsResourceTableBody) {
+         return;
+      }
+
+      try {
+         const result = await requestJson('/api/admin/lms-resources', {}, 'Unable to load LMS resources.');
+         renderLmsResources(result.items || []);
+      } catch (error) {
+         renderEmptyRow(lmsResourceTableBody, 6, error.message || 'Unable to load LMS resources.');
+      }
+   }
+
+   const addLmsResourceBtn = document.getElementById('adminAddLmsResourceBtn');
+   if (addLmsResourceBtn) {
+      addLmsResourceBtn.addEventListener('click', openAddLmsResourceModal);
+   }
+
+   const saveLmsResourceBtn = document.getElementById('adminLmsResourceSaveBtn');
+   if (saveLmsResourceBtn) {
+      saveLmsResourceBtn.addEventListener('click', async function () {
+         saveLmsResourceBtn.disabled = true;
+         setLmsResourceFormStatus('Saving…', false);
+
+         function value(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+         }
+
+         function checked(id) {
+            const el = document.getElementById(id);
+            return el ? el.checked : false;
+         }
+
+         const body = {
+            title: value('adminResourceTitle'),
+            type: value('adminResourceType') || 'file',
+            url: value('adminResourceUrl'),
+            description: value('adminResourceDescription'),
+            isPublished: checked('adminResourcePublished')
+         };
+
+         const isEdit = Boolean(currentLmsResourceId);
+
+         try {
+            const targetUrl = isEdit
+               ? '/api/admin/lms-resources/' + currentLmsResourceId
+               : '/api/admin/lms-resources';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            await requestJson(targetUrl, {
+               method: method,
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(body)
+            }, isEdit ? 'Unable to update LMS resource.' : 'Unable to create LMS resource.');
+
+            if (lmsResourceModal) lmsResourceModal.hide();
+            await loadLmsResources();
+            setStatus('LMS resource saved successfully.', false);
+         } catch (error) {
+            setLmsResourceFormStatus(error.message || 'Unable to save LMS resource.', true);
+         } finally {
+            saveLmsResourceBtn.disabled = false;
          }
       });
    }

@@ -57,7 +57,7 @@
                 <form id="lmsLoginForm" class="lms-login-form" novalidate>
                     <label>
                         Application Code
-                        <input type="text" id="lmsApplicationCode" name="applicationCode" placeholder="FM-YYYYMMDD-XXXXXX" required>
+                        <input type="text" id="lmsApplicationCode" name="applicationCode" placeholder="FM-YYYYMMDD-XXXX" required>
                     </label>
                     <label>
                         Email
@@ -83,7 +83,7 @@
 
         <section class="lms-course-section">
             <div class="lms-list-head">
-                <h2>Available Courses</h2>
+                <h2>My LMS Courses</h2>
                 <span id="lmsCourseMeta">0 courses</span>
             </div>
             <p class="admin-status" id="lmsStatus" aria-live="polite">Loading courses...</p>
@@ -91,6 +91,20 @@
                 <article class="lms-card">
                     <h3>Loading...</h3>
                     <p>Please wait while courses are loaded.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="lms-course-section">
+            <div class="lms-list-head">
+                <h2>Learning Resources</h2>
+                <span id="lmsResourceMeta">0 resources</span>
+            </div>
+            <p class="admin-status" id="lmsResourceStatus" aria-live="polite">Login to access resources.</p>
+            <div class="lms-grid" id="lmsResourceGrid">
+                <article class="lms-card">
+                    <h3>Login required</h3>
+                    <p>Please login with your applicant account to view books, videos, and downloadable files.</p>
                 </article>
             </div>
         </section>

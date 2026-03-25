@@ -2,6 +2,9 @@
   const lmsGrid = document.getElementById('lmsGrid');
   const lmsStatus = document.getElementById('lmsStatus');
   const lmsCourseMeta = document.getElementById('lmsCourseMeta');
+  const lmsResourceGrid = document.getElementById('lmsResourceGrid');
+  const lmsResourceMeta = document.getElementById('lmsResourceMeta');
+  const lmsResourceStatus = document.getElementById('lmsResourceStatus');
   const lmsAuthCard = document.getElementById('lmsAuthCard');
   const lmsApplicantCard = document.getElementById('lmsApplicantCard');
   const lmsLoginForm = document.getElementById('lmsLoginForm');
@@ -11,7 +14,7 @@
   const lmsApplicantMeta = document.getElementById('lmsApplicantMeta');
   const lmsLogoutBtn = document.getElementById('lmsLogoutBtn');
 
-  if (!lmsGrid || !lmsStatus || !lmsCourseMeta || !lmsLoginForm || !lmsAuthStatus || !lmsSessionStatus || !lmsApplicantName || !lmsApplicantMeta || !lmsLogoutBtn || !lmsAuthCard || !lmsApplicantCard) {
+  if (!lmsGrid || !lmsStatus || !lmsCourseMeta || !lmsResourceGrid || !lmsResourceMeta || !lmsResourceStatus || !lmsLoginForm || !lmsAuthStatus || !lmsSessionStatus || !lmsApplicantName || !lmsApplicantMeta || !lmsLogoutBtn || !lmsAuthCard || !lmsApplicantCard) {
     return;
   }
 
@@ -39,6 +42,12 @@
     lmsAuthStatus.textContent = message;
     lmsAuthStatus.classList.toggle('is-error', Boolean(isError));
     lmsAuthStatus.classList.toggle('is-success', !isError);
+  }
+
+  function setResourceStatus(message, isError) {
+    lmsResourceStatus.textContent = message;
+    lmsResourceStatus.classList.toggle('is-error', Boolean(isError));
+    lmsResourceStatus.classList.toggle('is-success', !isError);
   }
 
   function setSessionStatus(message, isError) {
@@ -77,6 +86,22 @@
     card.appendChild(title);
     card.appendChild(text);
     lmsGrid.appendChild(card);
+  }
+
+  function renderResourceEmpty(message) {
+    lmsResourceGrid.innerHTML = '';
+    const card = document.createElement('article');
+    card.className = 'lms-card';
+
+    const title = document.createElement('h3');
+    title.textContent = 'No resources';
+
+    const text = document.createElement('p');
+    text.textContent = message;
+
+    card.appendChild(title);
+    card.appendChild(text);
+    lmsResourceGrid.appendChild(card);
   }
 
   async function updateProgress(courseId, statusValue, triggerButton) {
@@ -219,6 +244,82 @@
     });
   }
 
+  function toSafeResourceType(value) {
+    const type = String(value || '').toLowerCase();
+    if (['book', 'video', 'clip', 'file'].includes(type)) {
+      return type;
+    }
+    return 'file';
+  }
+
+  function renderResources(items) {
+    lmsResourceMeta.textContent = `${items.length} resource${items.length === 1 ? '' : 's'}`;
+
+    if (!items.length) {
+      renderResourceEmpty('No published resources available right now.');
+      return;
+    }
+
+    lmsResourceGrid.innerHTML = '';
+
+    items.forEach((item) => {
+      const card = document.createElement('article');
+      card.className = 'lms-card';
+
+      const type = toSafeResourceType(item.type);
+      const title = document.createElement('h3');
+      title.textContent = item.title || 'Untitled resource';
+
+      const summary = document.createElement('p');
+      summary.className = 'lms-summary';
+      summary.textContent = item.description || 'LMS resource';
+
+      const foot = document.createElement('div');
+      foot.className = 'lms-card-foot';
+
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'lms-badge';
+      typeBadge.textContent = type;
+      foot.appendChild(typeBadge);
+
+      const openLink = document.createElement('a');
+      openLink.href = resolveApiUrl(item.url || '#');
+      openLink.target = '_blank';
+      openLink.rel = 'noopener noreferrer';
+      openLink.className = 'admin-outline-btn';
+      openLink.textContent = type === 'video' || type === 'clip' ? 'Open Video' : 'Download';
+      openLink.style.cssText = 'padding:.3rem .65rem;font-size:.75rem;text-decoration:none;display:inline-block;';
+      foot.appendChild(openLink);
+
+      card.appendChild(title);
+      card.appendChild(summary);
+
+      if (type === 'video' || type === 'clip') {
+        const lowerUrl = String(item.url || '').toLowerCase();
+        if (lowerUrl.includes('youtube.com') || lowerUrl.includes('youtu.be')) {
+          const frame = document.createElement('iframe');
+          frame.src = resolveApiUrl(item.url || '');
+          frame.title = item.title || 'LMS video';
+          frame.loading = 'lazy';
+          frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+          frame.allowFullscreen = true;
+          frame.style.cssText = 'width:100%;aspect-ratio:16/9;border:0;border-radius:10px;margin-top:.65rem;';
+          card.appendChild(frame);
+        } else {
+          const video = document.createElement('video');
+          video.controls = true;
+          video.preload = 'metadata';
+          video.src = resolveApiUrl(item.url || '');
+          video.style.cssText = 'width:100%;border-radius:10px;margin-top:.65rem;';
+          card.appendChild(video);
+        }
+      }
+
+      card.appendChild(foot);
+      lmsResourceGrid.appendChild(card);
+    });
+  }
+
   async function loadCourses() {
     setStatus('Loading courses...', false);
 
@@ -238,9 +339,19 @@
       }
 
       renderCourses(result.items || []);
+      if (applicantSession) {
+        renderResources(result.resources || []);
+        setResourceStatus('Resources loaded successfully.', false);
+      } else {
+        lmsResourceMeta.textContent = '0 resources';
+        renderResourceEmpty('Please login to access books, videos, clips, and downloadable files.');
+        setResourceStatus('Login to access resources.', false);
+      }
       setStatus('Courses loaded successfully.', false);
     } catch (error) {
       renderEmpty('Unable to load LMS courses right now. Please try again later.');
+      renderResourceEmpty('Unable to load LMS resources right now.');
+      setResourceStatus(error.message || 'Unable to load LMS resources.', true);
       setStatus(error.message || 'Unable to load LMS courses.', true);
     }
   }

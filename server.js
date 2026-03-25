@@ -670,7 +670,7 @@ function normalizeTeamUser(user) {
 
 function generateApplicationCode() {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomPart = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const randomPart = String(crypto.randomInt(0, 10000)).padStart(4, '0');
   return `FM-${datePart}-${randomPart}`;
 }
 
@@ -792,6 +792,54 @@ function validateLmsCoursePayload(body) {
 
   if (!isNonEmptyString(payload.duration)) {
     return { error: 'Course duration is required.' };
+  }
+
+  return { payload };
+}
+
+function sanitizeLmsResource(record) {
+  if (!record) {
+    return null;
+  }
+
+  const type = sanitizeText(record.type || 'file').toLowerCase();
+
+  return {
+    id: sanitizeText(record.id),
+    title: sanitizeText(record.title),
+    description: sanitizeText(record.description),
+    type,
+    url: sanitizeText(record.url),
+    isPublished: Boolean(record.isPublished),
+    submittedAt: record.submittedAt || null,
+    updatedAt: record.updatedAt || null
+  };
+}
+
+function validateLmsResourcePayload(body) {
+  const allowedTypes = ['book', 'video', 'clip', 'file'];
+  const payload = {
+    title: sanitizeText(body.title),
+    description: sanitizeText(body.description),
+    type: sanitizeText(body.type || 'file').toLowerCase(),
+    url: sanitizeText(body.url),
+    isPublished: Boolean(body.isPublished)
+  };
+
+  if (!isNonEmptyString(payload.title) || payload.title.length < 3) {
+    return { error: 'Resource title must be at least 3 characters.' };
+  }
+
+  if (!allowedTypes.includes(payload.type)) {
+    return { error: 'Resource type must be one of: book, video, clip, file.' };
+  }
+
+  if (!isNonEmptyString(payload.url)) {
+    return { error: 'Resource URL is required.' };
+  }
+
+  if (!/^https?:\/\//i.test(payload.url) && !payload.url.startsWith('/')) {
+    return { error: 'Resource URL must start with http(s):// or / for local files.' };
   }
 
   return { payload };
@@ -958,6 +1006,7 @@ function sanitizeApplicantProfile(registration) {
     applicationCode: sanitizeText(registration.applicationCode),
     fullName: sanitizeText(registration.fullName),
     email: sanitizeText(registration.email).toLowerCase(),
+    programKey: sanitizeText(registration.program).toLowerCase(),
     program: sanitizeText(registration.programLabel || registration.program),
     submittedAt: registration.submittedAt || null
   };
@@ -1237,6 +1286,7 @@ app.get('/api', async (_req, res) => {
       programs: '/api/programs',
       opportunities: '/api/opportunities',
       lmsCourses: '/api/lms-courses',
+      lmsResources: '/api/lms-resources',
       lmsUpdates: '/api/lms-updates',
       stats: '/api/stats',
       contact: '/api/contact',
@@ -1307,6 +1357,20 @@ app.get('/api/lms-courses', async (_req, res) => {
     items: visibleItems,
     total: visibleItems.length,
     featured: visibleItems.filter((item) => item.isFeatured).length
+  });
+});
+
+app.get('/api/lms-resources', async (_req, res) => {
+  const resources = await readRecords('lmsResources');
+  const items = sortRecordsDescending(
+    resources
+      .map((item) => sanitizeLmsResource(item))
+      .filter((item) => item && item.isPublished)
+  );
+
+  return res.json({
+    items,
+    total: items.length
   });
 });
 
@@ -1523,22 +1587,41 @@ app.post('/api/applicant/logout', (_req, res) => {
 
 app.get('/api/applicant/lms', requireApplicantAuth, async (req, res) => {
   const db = await getDb();
-  const [courses, progressRows] = await Promise.all([
+  const [courses, progressRows, resources] = await Promise.all([
     readRecords('lmsCourses'),
     db.collection('applicantProgress').find(
       { applicationCode: req.applicant.applicationCode },
       { projection: { _id: 0 } }
-    ).toArray()
+    ).toArray(),
+    readRecords('lmsResources')
   ]);
 
   const progressMap = new Map(
     progressRows.map((row) => [sanitizeText(row.courseId), row])
   );
 
+  const applicantProgramKey = sanitizeText(req.applicant.programKey || '').toLowerCase();
+  const applicantProgramLabel = sanitizeText(req.applicant.program || '').toLowerCase();
+
+  const isCourseEligibleForApplicant = (course) => {
+    if (!course) return false;
+
+    const courseTags = Array.isArray(course.tags)
+      ? course.tags.map((tag) => sanitizeText(tag).toLowerCase()).filter(Boolean)
+      : [];
+
+    // If no tags are defined, keep the course visible for all applicants.
+    if (!courseTags.length) {
+      return true;
+    }
+
+    return courseTags.includes(applicantProgramKey) || courseTags.includes(applicantProgramLabel);
+  };
+
   const items = sortLmsCourses(
     courses
       .map((item) => sanitizeLmsCourse(item))
-      .filter((item) => item && item.isPublished)
+      .filter((item) => item && item.isPublished && isCourseEligibleForApplicant(item))
   ).map((course) => {
     const progress = progressMap.get(course.id);
     return {
@@ -1548,10 +1631,17 @@ app.get('/api/applicant/lms', requireApplicantAuth, async (req, res) => {
     };
   });
 
+  const sharedResources = sortRecordsDescending(
+    resources
+      .map((item) => sanitizeLmsResource(item))
+      .filter((item) => item && item.isPublished)
+  );
+
   return res.json({
     applicant: req.applicant,
     items,
-    total: items.length
+    total: items.length,
+    resources: sharedResources
   });
 });
 
@@ -1871,6 +1961,90 @@ app.delete('/api/admin/lms-courses/:id', requireAdminAuth, async (req, res) => {
   }
 
   return res.json({ message: 'LMS course deleted.' });
+});
+
+app.get('/api/admin/lms-resources', requireAdminAuth, async (_req, res) => {
+  const resources = await readRecords('lmsResources');
+  const items = sortRecordsDescending(
+    resources
+      .map((item) => sanitizeLmsResource(item))
+      .filter(Boolean)
+  );
+
+  return res.json({
+    items,
+    total: items.length,
+    published: items.filter((item) => item.isPublished).length
+  });
+});
+
+app.post('/api/admin/lms-resources', requireAdminAuth, async (req, res) => {
+  const { error, payload } = validateLmsResourcePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const now = new Date().toISOString();
+  const record = {
+    id: `lmsresource_${Date.now()}`,
+    submittedAt: now,
+    updatedAt: now,
+    ...payload
+  };
+
+  await appendRecord('lmsResources', record);
+  return res.status(201).json({
+    message: 'LMS resource created.',
+    item: sanitizeLmsResource(record)
+  });
+});
+
+app.put('/api/admin/lms-resources/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Resource id is required.' });
+  }
+
+  const { error, payload } = validateLmsResourcePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const db = await getDb();
+  const updatedItem = await db.collection('lmsResources').findOneAndUpdate(
+    { id },
+    {
+      $set: {
+        ...payload,
+        updatedAt: new Date().toISOString()
+      }
+    },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) {
+    return res.status(404).json({ error: 'LMS resource not found.' });
+  }
+
+  return res.json({
+    message: 'LMS resource updated.',
+    item: sanitizeLmsResource(updatedItem)
+  });
+});
+
+app.delete('/api/admin/lms-resources/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Resource id is required.' });
+  }
+
+  const db = await getDb();
+  const result = await db.collection('lmsResources').deleteOne({ id });
+  if (!result.deletedCount) {
+    return res.status(404).json({ error: 'LMS resource not found.' });
+  }
+
+  return res.json({ message: 'LMS resource deleted.' });
 });
 
 // ── Admin: Team User Management ─────────────────────────────────────────────
