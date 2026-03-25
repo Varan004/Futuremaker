@@ -1,7 +1,8 @@
 const express = require('express');
 const crypto = require('crypto');
 const path = require('path');
-const { MongoClient } = require('mongodb');
+const { MongoClient, GridFSBucket, ObjectId } = require('mongodb');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -31,6 +32,28 @@ const applicantSessionCookieName = 'futuremakers_applicant_session';
 const applicantSessionTtlMs = 1000 * 60 * 60 * 8;
 
 let _mongoDb = null;
+
+const lmsFileUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    const allowed = [
+      'video/mp4', 'video/webm', 'video/ogg', 'video/avi', 'video/quicktime', 'video/x-matroska',
+      'application/pdf',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/zip', 'application/x-zip-compressed',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed. Supported: video, PDF, image, Office docs, ZIP.'));
+    }
+  }
+});
 
 async function getDb() {
   if (_mongoDb) return _mongoDb;
@@ -2162,6 +2185,99 @@ app.post('/api/admin/team-users/:username/reset-password', requireAdminAuth, asy
   await db.collection('teamUsers').updateOne({ username }, { $set: { salt, passwordHash } });
 
   return res.json({ message: `Password for "${username}" reset successfully.` });
+});
+
+app.post('/api/admin/lms-upload', requireAdminAuth, lmsFileUpload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file provided.' });
+  }
+
+  const db = await getDb();
+  const bucket = new GridFSBucket(db, { bucketName: 'lmsFiles' });
+  const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  const uploadStream = bucket.openUploadStream(safeName, {
+    contentType: req.file.mimetype,
+    metadata: {
+      uploadedAt: new Date().toISOString(),
+      originalName: req.file.originalname,
+      size: req.file.size
+    }
+  });
+
+  await new Promise((resolve, reject) => {
+    uploadStream.on('finish', resolve);
+    uploadStream.on('error', reject);
+    uploadStream.end(req.file.buffer);
+  });
+
+  const fileId = uploadStream.id.toString();
+  return res.status(201).json({
+    message: 'File uploaded successfully.',
+    fileId,
+    url: `/api/files/${fileId}`,
+    filename: req.file.originalname,
+    size: req.file.size,
+    mimeType: req.file.mimetype
+  });
+});
+
+app.get('/api/files/:fileId', async (req, res) => {
+  const fileId = sanitizeText(req.params.fileId);
+
+  if (!/^[a-f0-9]{24}$/.test(fileId)) {
+    return res.status(400).json({ error: 'Invalid file id.' });
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(fileId);
+  } catch {
+    return res.status(400).json({ error: 'Invalid file id.' });
+  }
+
+  const db = await getDb();
+  const bucket = new GridFSBucket(db, { bucketName: 'lmsFiles' });
+  const files = await bucket.find({ _id: objectId }).toArray();
+
+  if (!files.length) {
+    return res.status(404).json({ error: 'File not found.' });
+  }
+
+  const file = files[0];
+  const fileSize = file.length;
+  const contentType = file.contentType || 'application/octet-stream';
+  const rangeHeader = req.headers.range;
+
+  if (rangeHeader) {
+    const parts = rangeHeader.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunkSize = end - start + 1;
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunkSize,
+      'Content-Type': contentType
+    });
+
+    const downloadStream = bucket.openDownloadStream(objectId, { start, end: end + 1 });
+    downloadStream.on('error', () => { if (!res.headersSent) res.status(500).end(); });
+    downloadStream.pipe(res);
+  } else {
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Content-Length': fileSize,
+      'Accept-Ranges': 'bytes',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(file.filename)}"`,
+      'Cache-Control': 'public, max-age=86400'
+    });
+
+    const downloadStream = bucket.openDownloadStream(objectId);
+    downloadStream.on('error', () => { if (!res.headersSent) res.status(404).end(); });
+    downloadStream.pipe(res);
+  }
 });
 
 app.get('/api/health', (_req, res) => {

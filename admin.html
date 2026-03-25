@@ -446,9 +446,17 @@
                                     <option value="file">File</option>
                                 </select>
                             </label>
+                            <div class="admin-field admin-field--full">
+                                Upload File <em style="font-size:.78rem;opacity:.65;">(max 100 MB — video, PDF, image, Office, ZIP)</em>
+                                <div style="display:flex;gap:.5rem;align-items:center;margin-top:.35rem;">
+                                    <input type="file" id="adminResourceFile" accept="video/*,application/pdf,image/*,.zip,.doc,.docx,.ppt,.pptx" style="flex:1;color:inherit;">
+                                    <button type="button" class="admin-outline-btn" id="adminResourceUploadBtn" style="white-space:nowrap;">Upload</button>
+                                </div>
+                                <p class="admin-status" id="adminResourceUploadStatus" aria-live="polite" style="margin-top:.35rem;font-size:.82rem;min-height:1.2em;"></p>
+                            </div>
                             <label class="admin-field admin-field--full">
-                                URL
-                                <input type="text" name="url" id="adminResourceUrl" placeholder="https://... or /lms-files/my-book.pdf" required>
+                                URL <em style="font-size:.78rem;opacity:.65;">(auto-filled after upload, or paste a link)</em>
+                                <input type="text" name="url" id="adminResourceUrl" placeholder="https://... or upload a file above" required>
                             </label>
                             <label class="admin-field admin-field--full">
                                 Description

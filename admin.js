@@ -1075,6 +1075,13 @@
       el.classList.toggle('is-success', !isError);
    }
 
+   function clearResourceUploadState() {
+      const fileInput = document.getElementById('adminResourceFile');
+      const statusEl = document.getElementById('adminResourceUploadStatus');
+      if (fileInput) fileInput.value = '';
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'admin-status'; }
+   }
+
    function openAddLmsResourceModal() {
       currentLmsResourceId = null;
       const form = document.getElementById('adminLmsResourceForm');
@@ -1082,6 +1089,7 @@
       if (form) form.reset();
       if (label) label.textContent = 'Add LMS Resource';
       clearLmsResourceFormStatus();
+      clearResourceUploadState();
       if (lmsResourceModal) lmsResourceModal.show();
    }
 
@@ -1103,6 +1111,7 @@
       if (pubEl) pubEl.checked = Boolean(item.isPublished);
 
       clearLmsResourceFormStatus();
+      clearResourceUploadState();
       if (lmsResourceModal) lmsResourceModal.show();
    }
 
@@ -1187,6 +1196,58 @@
    const addLmsResourceBtn = document.getElementById('adminAddLmsResourceBtn');
    if (addLmsResourceBtn) {
       addLmsResourceBtn.addEventListener('click', openAddLmsResourceModal);
+   }
+
+   const resourceUploadBtn = document.getElementById('adminResourceUploadBtn');
+   if (resourceUploadBtn) {
+      resourceUploadBtn.addEventListener('click', async function () {
+         const fileInput = document.getElementById('adminResourceFile');
+         const urlInput = document.getElementById('adminResourceUrl');
+         const statusEl = document.getElementById('adminResourceUploadStatus');
+
+         if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+            if (statusEl) { statusEl.textContent = 'Select a file first.'; statusEl.className = 'admin-status is-error'; }
+            return;
+         }
+
+         const file = fileInput.files[0];
+         const formData = new FormData();
+         formData.append('file', file);
+
+         resourceUploadBtn.disabled = true;
+         if (statusEl) { statusEl.textContent = 'Uploading…'; statusEl.className = 'admin-status'; }
+
+         try {
+            let response;
+            try {
+               response = await fetch(resolveApiUrl('/api/admin/lms-upload'), {
+                  method: 'POST',
+                  body: formData
+               });
+            } catch (_networkError) {
+               throw new Error('Unable to reach backend API.');
+            }
+
+            let result = {};
+            try { result = await response.json(); } catch (_) { result = {}; }
+
+            if (!response.ok) {
+               throw new Error(result.error || 'Upload failed.');
+            }
+
+            if (urlInput) urlInput.value = result.url || '';
+            if (fileInput) fileInput.value = '';
+            const kb = Math.round((result.size || 0) / 1024);
+            if (statusEl) {
+               statusEl.textContent = `Uploaded: ${result.filename} (${kb} KB). URL filled in below.`;
+               statusEl.className = 'admin-status is-success';
+            }
+         } catch (error) {
+            if (statusEl) { statusEl.textContent = error.message || 'Upload failed.'; statusEl.className = 'admin-status is-error'; }
+         } finally {
+            resourceUploadBtn.disabled = false;
+         }
+      });
    }
 
    const saveLmsResourceBtn = document.getElementById('adminLmsResourceSaveBtn');
