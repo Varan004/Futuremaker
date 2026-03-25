@@ -247,6 +247,34 @@
                         </div>
                     </div>
                 </section>
+
+                <section class="admin-table-section" id="adminApplicantAccessSection">
+                    <div class="admin-section-heading admin-collapsible-heading">
+                        <div class="admin-heading-main">
+                            <h2>Applicant LMS Access</h2>
+                            <span id="adminApplicantAccessMeta">0 applicants</span>
+                        </div>
+                        <button type="button" class="admin-collapse-toggle" id="adminApplicantAccessToggleBtn" aria-expanded="true" aria-controls="adminApplicantAccessPanel">Collapse</button>
+                    </div>
+                    <div id="adminApplicantAccessPanel" class="admin-collapsible-panel">
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Application Code</th>
+                                        <th>Program</th>
+                                        <th>Program Key</th>
+                                        <th>Registered</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="applicantAccessTableBody">
+                                    <tr><td colspan="5">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
             </section>
         </section>
     </main>
@@ -399,10 +427,15 @@
                                 Duration
                                 <input type="text" name="duration" id="adminCourseDuration" placeholder="e.g. 4 weeks" required>
                             </label>
-                            <label class="admin-field admin-field--full">
-                                Tags (comma separated)
-                                <input type="text" name="tags" id="adminCourseTags" placeholder="ai, freelancing, basics">
-                            </label>
+                            <div class="admin-field admin-field--full">
+                                Tags (comma separated) <em style="font-size:.78rem;opacity:.65;">(or tick program shortcuts below)</em>
+                                <input type="text" name="tags" id="adminCourseTags" placeholder="ai, freelancing, basics" style="margin-top:.35rem;">
+                                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.5rem;">
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminCourseTagOrientation" value="orientation"> Orientation Course</label>
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminCourseTagFutureAi" value="future-ai"> Future in AI</label>
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminCourseTagCareerGuidance" value="career-guidance"> Career Guidance</label>
+                                </div>
+                            </div>
                             <label class="admin-field">
                                 <input type="checkbox" id="adminCoursePublished">
                                 Publish now
@@ -462,6 +495,14 @@
                                 Description
                                 <textarea name="description" id="adminResourceDescription" rows="3" placeholder="Short note about this resource"></textarea>
                             </label>
+                            <div class="admin-field admin-field--full">
+                                Program Access <em style="font-size:.78rem;opacity:.65;">(leave all unchecked = visible to every program)</em>
+                                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.35rem;">
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminResourceTagOrientation" value="orientation"> Orientation Course</label>
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminResourceTagFutureAi" value="future-ai"> Future in AI</label>
+                                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:400;font-size:.85rem;"><input type="checkbox" id="adminResourceTagCareerGuidance" value="career-guidance"> Career Guidance</label>
+                                </div>
+                            </div>
                             <label class="admin-field">
                                 <input type="checkbox" id="adminResourcePublished">
                                 Publish now

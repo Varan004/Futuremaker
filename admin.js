@@ -23,6 +23,10 @@
    const lmsResourcesSection = document.getElementById('adminLmsResourcesSection');
    const lmsResourcesPanel = document.getElementById('adminLmsResourcesPanel');
    const lmsResourcesToggleBtn = document.getElementById('adminLmsResourcesToggleBtn');
+   const applicantAccessTableBody = document.getElementById('applicantAccessTableBody');
+   const applicantAccessSection = document.getElementById('adminApplicantAccessSection');
+   const applicantAccessPanel = document.getElementById('adminApplicantAccessPanel');
+   const applicantAccessToggleBtn = document.getElementById('adminApplicantAccessToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
@@ -192,6 +196,20 @@
       }
    }
 
+   function setApplicantAccessPanelState(isOpen) {
+      if (!applicantAccessPanel || !applicantAccessToggleBtn) {
+         return;
+      }
+
+      applicantAccessPanel.hidden = !isOpen;
+      applicantAccessToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      applicantAccessToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (applicantAccessSection) {
+         applicantAccessSection.classList.toggle('is-collapsed', !isOpen);
+      }
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -261,6 +279,7 @@
 
          renderContacts(result.contactSubmissions || []);
          renderRegistrations(result.registrations || []);
+         renderApplicantAccess(result.registrations || []);
          setStatus('Submission data loaded successfully.', false);
       } catch (error) {
          renderEmptyRow(contactTableBody, 7, 'Unable to load contact submissions.');
@@ -353,6 +372,7 @@
             if (lmsUpdateTableBody) renderEmptyRow(lmsUpdateTableBody, 7, 'Login required.');
             if (lmsCourseTableBody) renderEmptyRow(lmsCourseTableBody, 7, 'Login required.');
             if (lmsResourceTableBody) renderEmptyRow(lmsResourceTableBody, 6, 'Login required.');
+            if (applicantAccessTableBody) renderEmptyRow(applicantAccessTableBody, 5, 'Login required.');
          }
       });
    }
@@ -387,6 +407,14 @@
          setLmsResourcesPanelState(!isOpen);
       });
       setLmsResourcesPanelState(true);
+   }
+
+   if (applicantAccessToggleBtn) {
+      applicantAccessToggleBtn.addEventListener('click', function () {
+         const isOpen = applicantAccessToggleBtn.getAttribute('aria-expanded') === 'true';
+         setApplicantAccessPanelState(!isOpen);
+      });
+      setApplicantAccessPanelState(true);
    }
 
    // ─── Team User Management ─────────────────────────────────────
@@ -906,13 +934,25 @@
       const publishedEl = document.getElementById('adminCoursePublished');
       const featuredEl = document.getElementById('adminCourseFeatured');
 
+      const programSlugs = ['orientation', 'future-ai', 'career-guidance'];
+      const existingTags = Array.isArray(item.tags) ? item.tags : [];
+      const programTagsInUse = existingTags.filter((t) => programSlugs.includes(t));
+      const extraTags = existingTags.filter((t) => !programSlugs.includes(t));
+
       if (titleEl) titleEl.value = item.title || '';
       if (summaryEl) summaryEl.value = item.summary || '';
       if (levelEl) levelEl.value = item.level || '';
       if (durationEl) durationEl.value = item.duration || '';
-      if (tagsEl) tagsEl.value = Array.isArray(item.tags) ? item.tags.join(', ') : '';
+      if (tagsEl) tagsEl.value = extraTags.join(', ');
       if (publishedEl) publishedEl.checked = Boolean(item.isPublished);
       if (featuredEl) featuredEl.checked = Boolean(item.isFeatured);
+
+      const orientEl = document.getElementById('adminCourseTagOrientation');
+      const aiEl = document.getElementById('adminCourseTagFutureAi');
+      const cgEl = document.getElementById('adminCourseTagCareerGuidance');
+      if (orientEl) orientEl.checked = programTagsInUse.includes('orientation');
+      if (aiEl) aiEl.checked = programTagsInUse.includes('future-ai');
+      if (cgEl) cgEl.checked = programTagsInUse.includes('career-guidance');
 
       clearLmsCourseFormStatus();
       if (lmsCourseModal) lmsCourseModal.show();
@@ -1024,10 +1064,24 @@
             summary: value('adminCourseSummary'),
             level: value('adminCourseLevel'),
             duration: value('adminCourseDuration'),
-            tags: value('adminCourseTags')
-               .split(',')
-               .map(function (tag) { return tag.trim(); })
-               .filter(Boolean),
+            tags: (function () {
+               const textTags = value('adminCourseTags')
+                  .split(',')
+                  .map(function (tag) { return tag.trim(); })
+                  .filter(Boolean);
+               const programMap = [
+                  { id: 'adminCourseTagOrientation', slug: 'orientation' },
+                  { id: 'adminCourseTagFutureAi', slug: 'future-ai' },
+                  { id: 'adminCourseTagCareerGuidance', slug: 'career-guidance' }
+               ];
+               const programTags = programMap
+                  .filter(function (p) { return checked(p.id); })
+                  .map(function (p) { return p.slug; });
+               const merged = programTags.concat(
+                  textTags.filter(function (t) { return !programTags.includes(t); })
+               );
+               return merged;
+            })(),
             isPublished: checked('adminCoursePublished'),
             isFeatured: checked('adminCourseFeatured')
          };
@@ -1054,6 +1108,31 @@
          } finally {
             saveLmsCourseBtn.disabled = false;
          }
+      });
+   }
+
+   function renderApplicantAccess(registrations) {
+      const meta = document.getElementById('adminApplicantAccessMeta');
+      if (meta) {
+         meta.textContent = `${registrations.length} applicant${registrations.length === 1 ? '' : 's'}`;
+      }
+
+      if (!applicantAccessTableBody) return;
+
+      if (!registrations.length) {
+         renderEmptyRow(applicantAccessTableBody, 5, 'No registrations yet.');
+         return;
+      }
+
+      applicantAccessTableBody.innerHTML = '';
+      registrations.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.fullName));
+         row.appendChild(createCell(item.applicationCode));
+         row.appendChild(createCell(item.programLabel || item.program));
+         row.appendChild(createCell(item.program));
+         row.appendChild(createCell(formatDate(item.submittedAt)));
+         applicantAccessTableBody.appendChild(row);
       });
    }
 
@@ -1088,6 +1167,12 @@
       const label = document.getElementById('lmsResourceModalLabel');
       if (form) form.reset();
       if (label) label.textContent = 'Add LMS Resource';
+      const orientEl = document.getElementById('adminResourceTagOrientation');
+      const aiEl = document.getElementById('adminResourceTagFutureAi');
+      const cgEl = document.getElementById('adminResourceTagCareerGuidance');
+      if (orientEl) orientEl.checked = false;
+      if (aiEl) aiEl.checked = false;
+      if (cgEl) cgEl.checked = false;
       clearLmsResourceFormStatus();
       clearResourceUploadState();
       if (lmsResourceModal) lmsResourceModal.show();
@@ -1109,6 +1194,14 @@
       if (urlEl) urlEl.value = item.url || '';
       if (descEl) descEl.value = item.description || '';
       if (pubEl) pubEl.checked = Boolean(item.isPublished);
+
+      const existingTags = Array.isArray(item.tags) ? item.tags : [];
+      const orientEl = document.getElementById('adminResourceTagOrientation');
+      const aiEl = document.getElementById('adminResourceTagFutureAi');
+      const cgEl = document.getElementById('adminResourceTagCareerGuidance');
+      if (orientEl) orientEl.checked = existingTags.includes('orientation');
+      if (aiEl) aiEl.checked = existingTags.includes('future-ai');
+      if (cgEl) cgEl.checked = existingTags.includes('career-guidance');
 
       clearLmsResourceFormStatus();
       clearResourceUploadState();
@@ -1266,11 +1359,20 @@
             return el ? el.checked : false;
          }
 
+         const programMap = [
+            { id: 'adminResourceTagOrientation', slug: 'orientation' },
+            { id: 'adminResourceTagFutureAi', slug: 'future-ai' },
+            { id: 'adminResourceTagCareerGuidance', slug: 'career-guidance' }
+         ];
+
          const body = {
             title: value('adminResourceTitle'),
             type: value('adminResourceType') || 'file',
             url: value('adminResourceUrl'),
             description: value('adminResourceDescription'),
+            tags: programMap
+               .filter(function (p) { return checked(p.id); })
+               .map(function (p) { return p.slug; }),
             isPublished: checked('adminResourcePublished')
          };
 

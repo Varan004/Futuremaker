@@ -826,6 +826,9 @@ function sanitizeLmsResource(record) {
   }
 
   const type = sanitizeText(record.type || 'file').toLowerCase();
+  const tags = Array.isArray(record.tags)
+    ? record.tags.map((tag) => sanitizeText(tag)).filter(Boolean)
+    : [];
 
   return {
     id: sanitizeText(record.id),
@@ -833,6 +836,7 @@ function sanitizeLmsResource(record) {
     description: sanitizeText(record.description),
     type,
     url: sanitizeText(record.url),
+    tags,
     isPublished: Boolean(record.isPublished),
     submittedAt: record.submittedAt || null,
     updatedAt: record.updatedAt || null
@@ -841,11 +845,19 @@ function sanitizeLmsResource(record) {
 
 function validateLmsResourcePayload(body) {
   const allowedTypes = ['book', 'video', 'clip', 'file'];
+  const tags = Array.isArray(body.tags)
+    ? body.tags.map((tag) => sanitizeText(tag)).filter(Boolean)
+    : sanitizeText(body.tags || '')
+      .split(',')
+      .map((tag) => sanitizeText(tag))
+      .filter(Boolean);
+
   const payload = {
     title: sanitizeText(body.title),
     description: sanitizeText(body.description),
     type: sanitizeText(body.type || 'file').toLowerCase(),
     url: sanitizeText(body.url),
+    tags,
     isPublished: Boolean(body.isPublished)
   };
 
@@ -1654,10 +1666,22 @@ app.get('/api/applicant/lms', requireApplicantAuth, async (req, res) => {
     };
   });
 
+  const isResourceEligibleForApplicant = (resource) => {
+    if (!resource) return false;
+    const resourceTags = Array.isArray(resource.tags)
+      ? resource.tags.map((tag) => sanitizeText(tag).toLowerCase()).filter(Boolean)
+      : [];
+    // If no tags set, resource is visible to all applicants
+    if (!resourceTags.length) {
+      return true;
+    }
+    return resourceTags.includes(applicantProgramKey) || resourceTags.includes(applicantProgramLabel);
+  };
+
   const sharedResources = sortRecordsDescending(
     resources
       .map((item) => sanitizeLmsResource(item))
-      .filter((item) => item && item.isPublished)
+      .filter((item) => item && item.isPublished && isResourceEligibleForApplicant(item))
   );
 
   return res.json({
