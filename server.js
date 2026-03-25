@@ -52,6 +52,7 @@ const pageRoutes = [
   { route: '/about-us', file: 'Aboutus.html' },
   { route: '/services', file: 'Service.html' },
   { route: '/opportunity', file: 'Opportunity.html' },
+  { route: '/updates', file: 'Updates.html' },
   { route: '/testimonials', file: 'Testimonial.html' },
   { route: '/contact', file: 'Contact.html' },
   { route: '/register', file: 'Register.html' },
@@ -65,6 +66,7 @@ const legacyRedirects = {
   '/Aboutus.html': '/about-us',
   '/Service.html': '/services',
   '/Opportunity.html': '/opportunity',
+  '/Updates.html': '/updates',
   '/Testimonial.html': '/testimonials',
   '/Contact.html': '/contact',
   '/Register.html': '/register',
@@ -593,6 +595,55 @@ function sortRecordsDescending(records) {
   ));
 }
 
+function sortLmsUpdates(records) {
+  return [...records].sort((left, right) => {
+    const pinDelta = Number(Boolean(right.isPinned)) - Number(Boolean(left.isPinned));
+    if (pinDelta !== 0) return pinDelta;
+    return new Date(right.submittedAt).getTime() - new Date(left.submittedAt).getTime();
+  });
+}
+
+function sanitizeLmsUpdate(record) {
+  if (!record) {
+    return null;
+  }
+
+  return {
+    id: sanitizeText(record.id),
+    title: sanitizeText(record.title),
+    summary: sanitizeText(record.summary),
+    body: sanitizeText(record.body),
+    isPublished: Boolean(record.isPublished),
+    isPinned: Boolean(record.isPinned),
+    submittedAt: record.submittedAt || null,
+    updatedAt: record.updatedAt || null
+  };
+}
+
+function validateLmsUpdatePayload(body) {
+  const payload = {
+    title: sanitizeText(body.title),
+    summary: sanitizeText(body.summary),
+    body: sanitizeText(body.body),
+    isPublished: Boolean(body.isPublished),
+    isPinned: Boolean(body.isPinned)
+  };
+
+  if (!isNonEmptyString(payload.title) || payload.title.length < 4) {
+    return { error: 'Title must be at least 4 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.summary) || payload.summary.length < 8) {
+    return { error: 'Summary must be at least 8 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.body) || payload.body.length < 15) {
+    return { error: 'Update details must be at least 15 characters.' };
+  }
+
+  return { payload };
+}
+
 async function appendRecord(collectionName, record) {
   const db = await getDb();
   await db.collection(collectionName).insertOne({ ...record });
@@ -985,6 +1036,7 @@ app.get('/api', async (_req, res) => {
       health: '/api/health',
       programs: '/api/programs',
       opportunities: '/api/opportunities',
+      lmsUpdates: '/api/lms-updates',
       stats: '/api/stats',
       contact: '/api/contact',
       registrations: '/api/registrations',
@@ -1021,6 +1073,20 @@ app.get('/api/opportunities', (_req, res) => {
       open: openCount,
       closed: closedCount
     }
+  });
+});
+
+app.get('/api/lms-updates', async (_req, res) => {
+  const updates = await readRecords('lmsUpdates');
+  const visibleItems = sortLmsUpdates(
+    updates
+      .map((item) => sanitizeLmsUpdate(item))
+      .filter((item) => item && item.isPublished)
+  );
+
+  return res.json({
+    items: visibleItems,
+    total: visibleItems.length
   });
 });
 
@@ -1284,6 +1350,90 @@ app.get('/api/admin/submissions', requireAdminAuth, async (_req, res) => {
     contactSubmissions: sortedContacts,
     registrations: sortedRegistrations
   });
+});
+
+app.get('/api/admin/lms-updates', requireAdminAuth, async (_req, res) => {
+  const updates = await readRecords('lmsUpdates');
+  const items = sortLmsUpdates(
+    updates
+      .map((item) => sanitizeLmsUpdate(item))
+      .filter(Boolean)
+  );
+
+  return res.json({
+    items,
+    total: items.length,
+    published: items.filter((item) => item.isPublished).length,
+    pinned: items.filter((item) => item.isPinned).length
+  });
+});
+
+app.post('/api/admin/lms-updates', requireAdminAuth, async (req, res) => {
+  const { error, payload } = validateLmsUpdatePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const record = {
+    id: `lmsupdate_${Date.now()}`,
+    submittedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...payload
+  };
+
+  await appendRecord('lmsUpdates', record);
+  return res.status(201).json({
+    message: 'LMS update created.',
+    item: sanitizeLmsUpdate(record)
+  });
+});
+
+app.put('/api/admin/lms-updates/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Update id is required.' });
+  }
+
+  const { error, payload } = validateLmsUpdatePayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const db = await getDb();
+  const updatedItem = await db.collection('lmsUpdates').findOneAndUpdate(
+    { id },
+    {
+      $set: {
+        ...payload,
+        updatedAt: new Date().toISOString()
+      }
+    },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) {
+    return res.status(404).json({ error: 'LMS update not found.' });
+  }
+
+  return res.json({
+    message: 'LMS update updated.',
+    item: sanitizeLmsUpdate(updatedItem)
+  });
+});
+
+app.delete('/api/admin/lms-updates/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'Update id is required.' });
+  }
+
+  const db = await getDb();
+  const result = await db.collection('lmsUpdates').deleteOne({ id });
+  if (!result.deletedCount) {
+    return res.status(404).json({ error: 'LMS update not found.' });
+  }
+
+  return res.json({ message: 'LMS update deleted.' });
 });
 
 // ── Admin: Team User Management ─────────────────────────────────────────────

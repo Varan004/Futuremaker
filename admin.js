@@ -8,16 +8,22 @@
    const contactTableBody = document.getElementById('contactTableBody');
    const registrationTableBody = document.getElementById('registrationTableBody');
    const teamUserTableBody = document.getElementById('teamUserTableBody');
+   const lmsUpdateTableBody = document.getElementById('lmsUpdateTableBody');
    const teamUsersSection = document.getElementById('adminTeamUsersSection');
    const teamUsersPanel = document.getElementById('adminTeamUsersPanel');
    const teamUsersToggleBtn = document.getElementById('adminTeamUsersToggleBtn');
+   const lmsUpdatesSection = document.getElementById('adminLmsUpdatesSection');
+   const lmsUpdatesPanel = document.getElementById('adminLmsUpdatesPanel');
+   const lmsUpdatesToggleBtn = document.getElementById('adminLmsUpdatesToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
    let teamUserDeleteModal = null;
+   let lmsUpdateModal = null;
    let currentEditUsername = null;
    let currentResetUsername = null;
    let currentDeleteUsername = null;
+   let currentLmsUpdateId = null;
 
    if (!authCard || !dashboard || !loginForm || !loginStatusElement || !statusElement || !contactTableBody || !registrationTableBody) {
       return;
@@ -132,6 +138,20 @@
       }
    }
 
+   function setLmsUpdatesPanelState(isOpen) {
+      if (!lmsUpdatesPanel || !lmsUpdatesToggleBtn) {
+         return;
+      }
+
+      lmsUpdatesPanel.hidden = !isOpen;
+      lmsUpdatesToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      lmsUpdatesToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (lmsUpdatesSection) {
+         lmsUpdatesSection.classList.toggle('is-collapsed', !isOpen);
+      }
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -211,7 +231,7 @@
          }
       }
 
-      await loadTeamUsers();
+      await Promise.all([loadTeamUsers(), loadLmsUpdates()]);
    }
 
    async function checkAdminSession() {
@@ -290,6 +310,7 @@
             renderEmptyRow(contactTableBody, 7, 'Login required.');
             renderEmptyRow(registrationTableBody, 13, 'Login required.');
             if (teamUserTableBody) renderEmptyRow(teamUserTableBody, 7, 'Login required.');
+            if (lmsUpdateTableBody) renderEmptyRow(lmsUpdateTableBody, 7, 'Login required.');
          }
       });
    }
@@ -302,6 +323,14 @@
       setTeamUsersPanelState(true);
    }
 
+   if (lmsUpdatesToggleBtn) {
+      lmsUpdatesToggleBtn.addEventListener('click', function () {
+         const isOpen = lmsUpdatesToggleBtn.getAttribute('aria-expanded') === 'true';
+         setLmsUpdatesPanelState(!isOpen);
+      });
+      setLmsUpdatesPanelState(true);
+   }
+
    // ─── Team User Management ─────────────────────────────────────
 
    function initTeamModals() {
@@ -309,9 +338,11 @@
       const tuEl = document.getElementById('teamUserModal');
       const resetEl = document.getElementById('teamUserResetModal');
       const delEl = document.getElementById('teamUserDeleteModal');
+      const lmsEl = document.getElementById('lmsUpdateModal');
       if (tuEl) teamUserModal = new bootstrap.Modal(tuEl);
       if (resetEl) teamUserResetModal = new bootstrap.Modal(resetEl);
       if (delEl) teamUserDeleteModal = new bootstrap.Modal(delEl);
+      if (lmsEl) lmsUpdateModal = new bootstrap.Modal(lmsEl);
    }
 
    function renderTeamUsers(users) {
@@ -585,6 +616,189 @@
             if (statusEl) { statusEl.textContent = error.message || 'Unable to delete team user.'; statusEl.className = 'admin-status is-error'; }
          } finally {
             deleteConfirmBtn.disabled = false;
+         }
+      });
+   }
+
+   // ─── LMS Updates Management ───────────────────────────────────
+
+   function clearLmsFormStatus() {
+      const el = document.getElementById('adminLmsFormStatus');
+      if (el) {
+         el.textContent = '';
+         el.className = 'admin-status';
+      }
+   }
+
+   function setLmsFormStatus(message, isError) {
+      const el = document.getElementById('adminLmsFormStatus');
+      if (!el) return;
+      el.textContent = message;
+      el.classList.toggle('is-error', Boolean(isError));
+      el.classList.toggle('is-success', !isError);
+   }
+
+   function openAddLmsUpdateModal() {
+      currentLmsUpdateId = null;
+      const form = document.getElementById('adminLmsUpdateForm');
+      const label = document.getElementById('lmsUpdateModalLabel');
+      if (form) form.reset();
+      if (label) label.textContent = 'Add LMS Update';
+      clearLmsFormStatus();
+      if (lmsUpdateModal) lmsUpdateModal.show();
+   }
+
+   function openEditLmsUpdateModal(item) {
+      currentLmsUpdateId = item.id;
+      const label = document.getElementById('lmsUpdateModalLabel');
+      if (label) label.textContent = 'Edit LMS Update';
+
+      const titleEl = document.getElementById('adminLmsTitle');
+      const summaryEl = document.getElementById('adminLmsSummary');
+      const bodyEl = document.getElementById('adminLmsBody');
+      const publishedEl = document.getElementById('adminLmsPublished');
+      const pinnedEl = document.getElementById('adminLmsPinned');
+
+      if (titleEl) titleEl.value = item.title || '';
+      if (summaryEl) summaryEl.value = item.summary || '';
+      if (bodyEl) bodyEl.value = item.body || '';
+      if (publishedEl) publishedEl.checked = Boolean(item.isPublished);
+      if (pinnedEl) pinnedEl.checked = Boolean(item.isPinned);
+
+      clearLmsFormStatus();
+      if (lmsUpdateModal) lmsUpdateModal.show();
+   }
+
+   function renderLmsUpdates(items) {
+      const meta = document.getElementById('adminLmsUpdateMeta');
+      if (meta) {
+         meta.textContent = `${items.length} update${items.length === 1 ? '' : 's'}`;
+      }
+      setSummaryText('adminLmsUpdateCount', items.length);
+
+      if (!lmsUpdateTableBody) {
+         return;
+      }
+
+      if (!items.length) {
+         renderEmptyRow(lmsUpdateTableBody, 7, 'No LMS updates yet.');
+         return;
+      }
+
+      lmsUpdateTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.title));
+         row.appendChild(createCell(item.summary));
+         row.appendChild(createCell(item.isPublished ? 'Yes' : 'No'));
+         row.appendChild(createCell(item.isPinned ? 'Yes' : 'No'));
+         row.appendChild(createCell(formatDate(item.submittedAt)));
+         row.appendChild(createCell(formatDate(item.updatedAt)));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+
+         const editBtn = document.createElement('button');
+         editBtn.type = 'button';
+         editBtn.textContent = 'Edit';
+         editBtn.className = 'admin-outline-btn';
+         editBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         editBtn.addEventListener('click', function () { openEditLmsUpdateModal(item); });
+
+         const deleteBtn = document.createElement('button');
+         deleteBtn.type = 'button';
+         deleteBtn.textContent = 'Delete';
+         deleteBtn.className = 'admin-outline-btn admin-delete-btn';
+         deleteBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         deleteBtn.addEventListener('click', async function () {
+            const ok = window.confirm('Delete this LMS update? This action cannot be undone.');
+            if (!ok) {
+               return;
+            }
+
+            deleteBtn.disabled = true;
+            try {
+               await requestJson('/api/admin/lms-updates/' + item.id, {
+                  method: 'DELETE'
+               }, 'Unable to delete LMS update.');
+               await loadLmsUpdates();
+            } catch (error) {
+               setStatus(error.message || 'Unable to delete LMS update.', true);
+            } finally {
+               deleteBtn.disabled = false;
+            }
+         });
+
+         actionCell.appendChild(editBtn);
+         actionCell.appendChild(deleteBtn);
+         row.appendChild(actionCell);
+         lmsUpdateTableBody.appendChild(row);
+      });
+   }
+
+   async function loadLmsUpdates() {
+      if (!lmsUpdateTableBody) {
+         return;
+      }
+
+      try {
+         const result = await requestJson('/api/admin/lms-updates', {}, 'Unable to load LMS updates.');
+         renderLmsUpdates(result.items || []);
+      } catch (error) {
+         renderEmptyRow(lmsUpdateTableBody, 7, error.message || 'Unable to load LMS updates.');
+      }
+   }
+
+   const addLmsUpdateBtn = document.getElementById('adminAddLmsUpdateBtn');
+   if (addLmsUpdateBtn) {
+      addLmsUpdateBtn.addEventListener('click', openAddLmsUpdateModal);
+   }
+
+   const saveLmsUpdateBtn = document.getElementById('adminLmsSaveBtn');
+   if (saveLmsUpdateBtn) {
+      saveLmsUpdateBtn.addEventListener('click', async function () {
+         saveLmsUpdateBtn.disabled = true;
+         setLmsFormStatus('Saving…', false);
+
+         function value(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+         }
+
+         function checked(id) {
+            const el = document.getElementById(id);
+            return el ? el.checked : false;
+         }
+
+         const body = {
+            title: value('adminLmsTitle'),
+            summary: value('adminLmsSummary'),
+            body: value('adminLmsBody'),
+            isPublished: checked('adminLmsPublished'),
+            isPinned: checked('adminLmsPinned')
+         };
+
+         const isEdit = Boolean(currentLmsUpdateId);
+
+         try {
+            const targetUrl = isEdit
+               ? '/api/admin/lms-updates/' + currentLmsUpdateId
+               : '/api/admin/lms-updates';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            await requestJson(targetUrl, {
+               method: method,
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(body)
+            }, isEdit ? 'Unable to update LMS update.' : 'Unable to create LMS update.');
+
+            if (lmsUpdateModal) lmsUpdateModal.hide();
+            await loadLmsUpdates();
+            setStatus('LMS update saved successfully.', false);
+         } catch (error) {
+            setLmsFormStatus(error.message || 'Unable to save LMS update.', true);
+         } finally {
+            saveLmsUpdateBtn.disabled = false;
          }
       });
    }
