@@ -2094,6 +2094,89 @@ app.delete('/api/admin/lms-resources/:id', requireAdminAuth, async (req, res) =>
   return res.json({ message: 'LMS resource deleted.' });
 });
 
+app.post('/api/admin/lms-upload', requireAdminAuth, (req, res) => {
+  lmsFileUpload.single('file')(req, res, async (uploadError) => {
+    if (uploadError) {
+      return res.status(400).json({
+        error: uploadError.message || 'Upload failed.'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'File is required.'
+      });
+    }
+
+    try {
+      const db = await getDb();
+      const bucket = new GridFSBucket(db, { bucketName: 'lmsUploads' });
+      const safeOriginalName = path.basename(sanitizeText(req.file.originalname) || 'upload');
+      const extension = path.extname(safeOriginalName);
+      const baseName = path.basename(safeOriginalName, extension) || 'upload';
+      const storedFilename = `${Date.now()}-${baseName}${extension}`;
+
+      const uploadStream = bucket.openUploadStream(storedFilename, {
+        contentType: req.file.mimetype,
+        metadata: {
+          originalName: safeOriginalName,
+          uploadedAt: new Date().toISOString(),
+          size: req.file.size
+        }
+      });
+
+      uploadStream.on('error', () => {
+        if (!res.headersSent) {
+          return res.status(500).json({ error: 'Unable to store uploaded file.' });
+        }
+      });
+
+      uploadStream.on('finish', () => {
+        return res.status(201).json({
+          message: 'Upload successful.',
+          filename: safeOriginalName,
+          storedFilename,
+          fileId: String(uploadStream.id),
+          size: req.file.size,
+          mimeType: req.file.mimetype,
+          url: `/api/lms-files/${encodeURIComponent(String(uploadStream.id))}`
+        });
+      });
+
+      uploadStream.end(req.file.buffer);
+    } catch (_error) {
+      return res.status(500).json({
+        error: 'Unable to upload file right now.'
+      });
+    }
+  });
+});
+
+app.get('/api/lms-files/:id', async (req, res) => {
+  const fileId = sanitizeText(req.params.id);
+
+  if (!ObjectId.isValid(fileId)) {
+    return res.status(400).json({ error: 'Invalid file id.' });
+  }
+
+  try {
+    const db = await getDb();
+    const bucket = new GridFSBucket(db, { bucketName: 'lmsUploads' });
+    const files = await bucket.find({ _id: new ObjectId(fileId) }).limit(1).toArray();
+    const file = files[0];
+
+    if (!file) {
+      return res.status(404).json({ error: 'File not found.' });
+    }
+
+    res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.filename || 'file')}"`);
+    return bucket.openDownloadStream(file._id).pipe(res);
+  } catch (_error) {
+    return res.status(500).json({ error: 'Unable to download file right now.' });
+  }
+});
+
 // ── Admin: Team User Management ─────────────────────────────────────────────
 
 app.get('/api/admin/team-users', requireAdminAuth, async (_req, res) => {
