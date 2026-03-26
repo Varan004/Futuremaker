@@ -691,10 +691,21 @@ function normalizeTeamUser(user) {
   };
 }
 
-function generateApplicationCode() {
+async function getNextRegistrationNumber() {
+  const db = await getDb();
+  const result = await db.collection('counters').findOneAndUpdate(
+    { _id: 'registrationCounter' },
+    { $inc: { value: 1 } },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return result.value || 1;
+}
+
+async function generateApplicationCode() {
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const randomPart = String(crypto.randomInt(0, 10000)).padStart(4, '0');
-  return `FM-${datePart}-${randomPart}`;
+  const sequenceNumber = await getNextRegistrationNumber();
+  const sequencePart = String(sequenceNumber).padStart(4, '0');
+  return `FM-${sequencePart}-${datePart}`;
 }
 
 function sortRecordsDescending(records) {
@@ -1229,7 +1240,7 @@ async function validateRegistrationPayload(body) {
 
   return {
     payload: {
-      applicationCode: generateApplicationCode(),
+      applicationCode: await generateApplicationCode(),
       firstName: payload.firstName,
       lastName: payload.lastName,
       fullName: `${payload.firstName} ${payload.lastName}`.trim(),
@@ -1247,6 +1258,38 @@ async function validateRegistrationPayload(body) {
       assignedTeamUserName: assignedTeamUser.fullName || assignedTeamUser.username
     }
   };
+}
+
+function validateTestimonialPayload(body) {
+  const payload = {
+    fullName: sanitizeText(body.fullName),
+    location: sanitizeText(body.location),
+    program: sanitizeText(body.program),
+    rating: parseInt(body.rating, 10),
+    message: sanitizeText(body.message)
+  };
+
+  if (!isNonEmptyString(payload.fullName)) {
+    return { error: 'Full name is required.' };
+  }
+
+  if (payload.fullName.trim().length < 2) {
+    return { error: 'Full name must be at least 2 characters.' };
+  }
+
+  if (!Number.isInteger(payload.rating) || payload.rating < 1 || payload.rating > 5) {
+    return { error: 'Rating must be between 1 and 5.' };
+  }
+
+  if (!isNonEmptyString(payload.message)) {
+    return { error: 'Review message is required.' };
+  }
+
+  if (payload.message.trim().length < 15) {
+    return { error: 'Your review must be at least 15 characters.' };
+  }
+
+  return { payload };
 }
 
 app.post('/api/contact', async (req, res) => {
@@ -1307,6 +1350,39 @@ app.post('/api/registrations', async (req, res) => {
   });
 });
 
+app.get('/api/testimonials', async (_req, res) => {
+  const testimonials = await readRecords('testimonials');
+  const visibleItems = sortRecordsDescending(
+    testimonials
+      .filter((item) => item && item.isApproved)
+  );
+
+  return res.json({
+    items: visibleItems,
+    total: visibleItems.length
+  });
+});
+
+app.post('/api/testimonials', async (req, res) => {
+  const { error, payload } = validateTestimonialPayload(req.body);
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const record = {
+    id: `testimonial_${Date.now()}`,
+    submittedAt: new Date().toISOString(),
+    status: 'pending',
+    ...payload
+  };
+
+  await appendRecord('testimonials', record);
+
+  return res.status(201).json({
+    message: 'Thank you! Your testimonial has been submitted and is under review.'
+  });
+});
+
 app.get('/api', async (_req, res) => {
   const [contactSubmissions, registrations] = await Promise.all([
     readRecords('contacts'),
@@ -1326,6 +1402,7 @@ app.get('/api', async (_req, res) => {
       stats: '/api/stats',
       contact: '/api/contact',
       registrations: '/api/registrations',
+      testimonials: '/api/testimonials',
       teamSession: '/api/team/session',
       teamPublicUsers: '/api/team/public-users',
       teamRegister: '/api/team/register',

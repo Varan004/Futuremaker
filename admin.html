@@ -86,6 +86,10 @@
                         <span class="admin-summary-label">LMS Courses</span>
                         <strong id="adminLmsCourseCount">0</strong>
                     </article>
+                    <article class="admin-summary-card">
+                        <span class="admin-summary-label">Pending Testimonials</span>
+                        <strong id="adminTestimonialsCount">0</strong>
+                    </article>
                 </div>
 
                 <p class="admin-status" id="adminStatus" aria-live="polite">Loading submission data...</p>
@@ -270,6 +274,36 @@
                                 </thead>
                                 <tbody id="applicantAccessTableBody">
                                     <tr><td colspan="5">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-table-section" id="adminTestimonialsSection">
+                    <div class="admin-section-heading admin-collapsible-heading">
+                        <div class="admin-heading-main">
+                            <h2>Testimonials</h2>
+                            <span id="adminTestimonialsMeta">0 pending</span>
+                        </div>
+                        <button type="button" class="admin-collapse-toggle" id="adminTestimonialsToggleBtn" aria-expanded="true" aria-controls="adminTestimonialsPanel">Collapse</button>
+                    </div>
+                    <div id="adminTestimonialsPanel" class="admin-collapsible-panel">
+                        <div class="admin-table-wrap">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Rating</th>
+                                        <th>Program</th>
+                                        <th>Message</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="testimonialsTableBody">
+                                    <tr><td colspan="7">Loading...</td></tr>
                                 </tbody>
                             </table>
                         </div>

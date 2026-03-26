@@ -27,6 +27,10 @@
    const applicantAccessSection = document.getElementById('adminApplicantAccessSection');
    const applicantAccessPanel = document.getElementById('adminApplicantAccessPanel');
    const applicantAccessToggleBtn = document.getElementById('adminApplicantAccessToggleBtn');
+   const testimonialsTableBody = document.getElementById('testimonialsTableBody');
+   const testimonialsSection = document.getElementById('adminTestimonialsSection');
+   const testimonialsPanel = document.getElementById('adminTestimonialsPanel');
+   const testimonialsToggleBtn = document.getElementById('adminTestimonialsToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
@@ -214,6 +218,20 @@
       }
    }
 
+   function setTestimonialsPanelState(isOpen) {
+      if (!testimonialsPanel || !testimonialsToggleBtn) {
+         return;
+      }
+
+      testimonialsPanel.hidden = !isOpen;
+      testimonialsToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      testimonialsToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+
+      if (testimonialsSection) {
+         testimonialsSection.classList.toggle('is-collapsed', !isOpen);
+      }
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -294,7 +312,7 @@
          }
       }
 
-      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses(), loadLmsResources()]);
+      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses(), loadLmsResources(), loadTestimonials()]);
    }
 
    async function checkAdminSession() {
@@ -377,6 +395,7 @@
             if (lmsCourseTableBody) renderEmptyRow(lmsCourseTableBody, 7, 'Login required.');
             if (lmsResourceTableBody) renderEmptyRow(lmsResourceTableBody, 6, 'Login required.');
             if (applicantAccessTableBody) renderEmptyRow(applicantAccessTableBody, 5, 'Login required.');
+            if (testimonialsTableBody) renderEmptyRow(testimonialsTableBody, 7, 'Login required.');
          }
       });
    }
@@ -419,6 +438,14 @@
          setApplicantAccessPanelState(!isOpen);
       });
       setApplicantAccessPanelState(true);
+   }
+
+   if (testimonialsToggleBtn) {
+      testimonialsToggleBtn.addEventListener('click', function () {
+         const isOpen = testimonialsToggleBtn.getAttribute('aria-expanded') === 'true';
+         setTestimonialsPanelState(!isOpen);
+      });
+      setTestimonialsPanelState(true);
    }
 
    // ─── Team User Management ─────────────────────────────────────
@@ -1138,6 +1165,103 @@
          row.appendChild(createCell(formatDate(item.submittedAt)));
          applicantAccessTableBody.appendChild(row);
       });
+   }
+
+   function renderTestimonials(items) {
+      const meta = document.getElementById('adminTestimonialsMeta');
+      const pending = items.filter((item) => item.status === 'pending').length;
+      if (meta) {
+         meta.textContent = `${pending} pending`;
+      }
+
+      setSummaryText('adminTestimonialsCount', pending);
+      if (!testimonialsTableBody) return;
+
+      if (!items.length) {
+         renderEmptyRow(testimonialsTableBody, 7, 'No testimonials yet.');
+         return;
+      }
+
+      testimonialsTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.fullName));
+         row.appendChild(createCell(item.rating + '/5'));
+         row.appendChild(createCell(item.program || '-'));
+         const msgCell = document.createElement('td');
+         msgCell.textContent = (item.message || '').substring(0, 50) + (item.message && item.message.length > 50 ? '…' : '');
+         msgCell.style.maxWidth = '200px';
+         msgCell.style.overflow = 'hidden';
+         msgCell.style.textOverflow = 'ellipsis';
+         msgCell.style.whiteSpace = 'nowrap';
+         row.appendChild(msgCell);
+         row.appendChild(createCell(item.status || 'pending'));
+         row.appendChild(createCell(formatDate(item.submittedAt)));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+
+         if (item.status === 'pending') {
+            const approveBtn = document.createElement('button');
+            approveBtn.type = 'button';
+            approveBtn.textContent = 'Approve';
+            approveBtn.className = 'admin-outline-btn';
+            approveBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+            approveBtn.addEventListener('click', async function () {
+               approveBtn.disabled = true;
+               try {
+                  await requestJson('/api/admin/testimonials/' + item.id, {
+                     method: 'PUT',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ status: 'approved' })
+                  }, 'Unable to approve testimonial.');
+                  await loadTestimonials();
+                  setStatus('Testimonial approved successfully.', false);
+               } catch (error) {
+                  setStatus(error.message || 'Unable to approve testimonial.', true);
+               } finally {
+                  approveBtn.disabled = false;
+               }
+            });
+            actionCell.appendChild(approveBtn);
+         }
+
+         const deleteBtn = document.createElement('button');
+         deleteBtn.type = 'button';
+         deleteBtn.textContent = 'Delete';
+         deleteBtn.className = 'admin-outline-btn admin-delete-btn';
+         deleteBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         deleteBtn.addEventListener('click', async function () {
+            const ok = window.confirm('Delete this testimonial? This action cannot be undone.');
+            if (!ok) return;
+
+            deleteBtn.disabled = true;
+            try {
+               await requestJson('/api/admin/testimonials/' + item.id, {
+                  method: 'DELETE'
+               }, 'Unable to delete testimonial.');
+               await loadTestimonials();
+               setStatus('Testimonial deleted successfully.', false);
+            } catch (error) {
+               setStatus(error.message || 'Unable to delete testimonial.', true);
+            } finally {
+               deleteBtn.disabled = false;
+            }
+         });
+         actionCell.appendChild(deleteBtn);
+         row.appendChild(actionCell);
+         testimonialsTableBody.appendChild(row);
+      });
+   }
+
+   async function loadTestimonials() {
+      if (!testimonialsTableBody) return;
+      try {
+         const result = await requestJson('/api/admin/testimonials', {}, 'Unable to load testimonials.');
+         renderTestimonials(result.items || []);
+      } catch (error) {
+         renderEmptyRow(testimonialsTableBody, 7, error.message || 'Unable to load testimonials.');
+      }
    }
 
    // ─── LMS Resources Management ───────────────────────────────
