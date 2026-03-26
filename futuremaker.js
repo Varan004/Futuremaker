@@ -501,6 +501,13 @@ function buildContactWhatsappUrl(formElement, payload) {
    const teamUserBankCard = document.getElementById('teamUserBankCard');
    const programFee = document.getElementById('programFee');
    const teamUserField = registerForm.querySelector('select[name="teamUser"]');
+   const registrationCodeModal = document.getElementById('registrationCodeModal');
+   const registrationCodeValue = document.getElementById('registrationCodeValue');
+   const registrationCodeClose = document.getElementById('registrationCodeClose');
+   const registrationCodeCopy = document.getElementById('registrationCodeCopy');
+   const registrationCodeSave = document.getElementById('registrationCodeSave');
+   const registrationCodeDone = document.getElementById('registrationCodeDone');
+   const registrationCodeStatus = document.getElementById('registrationCodeStatus');
 
    const fallbackBankDetails = {
       bankName: 'Bank of Ceylon',
@@ -529,6 +536,87 @@ function buildContactWhatsappUrl(formElement, payload) {
       if (method === 'card') return 'Card Payment';
       if (method === 'bank') return 'Direct Bank Transfer';
       return 'Pay Later (At Office)';
+   }
+
+   function closeRegistrationCodeModal() {
+      if (!registrationCodeModal) return;
+      registrationCodeModal.classList.add('hidden');
+      registrationCodeModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('registration-modal-open');
+      if (registrationCodeStatus) {
+         registrationCodeStatus.textContent = '';
+      }
+   }
+
+   function openRegistrationCodeModal(applicationCode) {
+      if (!registrationCodeModal || !registrationCodeValue) return;
+      registrationCodeValue.textContent = applicationCode;
+      if (registrationCodeStatus) {
+         registrationCodeStatus.textContent = '';
+      }
+      registrationCodeModal.classList.remove('hidden');
+      registrationCodeModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('registration-modal-open');
+      if (registrationCodeDone) {
+         registrationCodeDone.focus();
+      }
+   }
+
+   async function copyRegistrationCode() {
+      if (!registrationCodeValue) return;
+
+      const code = registrationCodeValue.textContent.trim();
+      if (!code) return;
+
+      try {
+         if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(code);
+         } else {
+            const tempInput = document.createElement('input');
+            tempInput.value = code;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            tempInput.remove();
+         }
+
+         if (registrationCodeStatus) {
+            registrationCodeStatus.textContent = 'Registration code copied.';
+         }
+      } catch (_error) {
+         if (registrationCodeStatus) {
+            registrationCodeStatus.textContent = 'Could not copy automatically. Please copy the code manually.';
+         }
+      }
+   }
+
+   function saveRegistrationCode() {
+      if (!registrationCodeValue) return;
+
+      const code = registrationCodeValue.textContent.trim();
+      if (!code) return;
+
+      const fileContent = [
+         'FutureMakers Registration Code',
+         '',
+         'Registration Code: ' + code,
+         'Generated At: ' + new Date().toLocaleString()
+      ].join('\r\n');
+
+      const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+
+      downloadLink.href = downloadUrl;
+      downloadLink.download = code.toLowerCase() + '.txt';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(downloadUrl);
+
+      if (registrationCodeStatus) {
+         registrationCodeStatus.textContent = 'Registration code file downloaded.';
+      }
    }
 
    function updateFee() {
@@ -657,6 +745,36 @@ function buildContactWhatsappUrl(formElement, payload) {
       field.addEventListener('change', updatePaymentMode);
    });
 
+   if (registrationCodeClose) {
+      registrationCodeClose.addEventListener('click', closeRegistrationCodeModal);
+   }
+
+   if (registrationCodeDone) {
+      registrationCodeDone.addEventListener('click', closeRegistrationCodeModal);
+   }
+
+   if (registrationCodeCopy) {
+      registrationCodeCopy.addEventListener('click', copyRegistrationCode);
+   }
+
+   if (registrationCodeSave) {
+      registrationCodeSave.addEventListener('click', saveRegistrationCode);
+   }
+
+   if (registrationCodeModal) {
+      registrationCodeModal.addEventListener('click', function (event) {
+         if (event.target && event.target.hasAttribute('data-close-registration-modal')) {
+            closeRegistrationCodeModal();
+         }
+      });
+   }
+
+   document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && registrationCodeModal && !registrationCodeModal.classList.contains('hidden')) {
+         closeRegistrationCodeModal();
+      }
+   });
+
    updateBankDetails();
    updateFee();
    updatePaymentMode();
@@ -709,6 +827,9 @@ function buildContactWhatsappUrl(formElement, payload) {
             ? ' Confirmation email sent.'
             : ' Registration saved. Email is pending from server configuration.';
          setFormStatus(statusElement, (result.message || 'Registration submitted successfully.') + paymentSummary + methodSummary + applicationCodeSummary + teamSummary + mailSummary, 'success');
+         if (result.applicationCode) {
+            openRegistrationCodeModal(result.applicationCode);
+         }
          registerForm.reset();
          updateFee();
          updatePaymentMode();

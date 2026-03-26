@@ -204,8 +204,23 @@
             </div>
         </section>
 
-        
-        
+        <div class="registration-code-modal hidden" id="registrationCodeModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="registrationCodeTitle">
+            <div class="registration-code-modal__backdrop" data-close-registration-modal="true"></div>
+            <div class="registration-code-modal__panel">
+                <button type="button" class="registration-code-modal__close" id="registrationCodeClose" aria-label="Close registration code popup">&times;</button>
+                <p class="registration-code-modal__eyebrow">Registration Complete</p>
+                <h2 id="registrationCodeTitle">Your registration code</h2>
+                <p class="registration-code-modal__text">Keep this code safe. You may need it for payment reference and support.</p>
+                <div class="registration-code-modal__code" id="registrationCodeValue">FM-000000</div>
+                <div class="registration-code-modal__actions">
+                    <button type="button" class="registration-code-modal__button registration-code-modal__button--secondary" id="registrationCodeCopy">Copy code</button>
+                    <button type="button" class="registration-code-modal__button registration-code-modal__button--secondary" id="registrationCodeSave">Save code</button>
+                    <button type="button" class="registration-code-modal__button" id="registrationCodeDone">Done</button>
+                </div>
+                <p class="registration-code-modal__status" id="registrationCodeStatus" aria-live="polite"></p>
+            </div>
+        </div>
+
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

@@ -23,6 +23,167 @@ body {
     color: var(--text-main);
 }
 
+body.registration-modal-open {
+    overflow: hidden;
+}
+
+.registration-code-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.registration-code-modal.hidden {
+    display: none;
+}
+
+.registration-code-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(7, 4, 18, 0.76);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.registration-code-modal__panel {
+    position: relative;
+    width: min(460px, 100%);
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at top right, rgba(255, 63, 196, 0.22), transparent 35%),
+        radial-gradient(circle at bottom left, rgba(143, 107, 255, 0.24), transparent 40%),
+        rgba(20, 12, 41, 0.94);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+    text-align: center;
+    animation: registrationModalIn 0.28s ease;
+}
+
+.registration-code-modal__close {
+    position: absolute;
+    top: 0.9rem;
+    right: 0.9rem;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    font-size: 1.7rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.registration-code-modal__eyebrow {
+    margin: 0 0 0.6rem;
+    color: var(--accent);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.registration-code-modal h2 {
+    margin: 0;
+    font-family: "Syne", sans-serif;
+    font-size: clamp(1.7rem, 4vw, 2.2rem);
+}
+
+.registration-code-modal__text {
+    margin: 0.9rem 0 1.4rem;
+    color: var(--text-soft);
+    line-height: 1.6;
+}
+
+.registration-code-modal__code {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid rgba(255, 63, 196, 0.35);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(143, 107, 255, 0.18);
+    font-family: "Syne", sans-serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #ffffff;
+    text-transform: uppercase;
+}
+
+.registration-code-modal__actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.registration-code-modal__button {
+    min-width: 160px;
+    padding: 0.9rem 1.4rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(110deg, var(--accent-2), var(--accent));
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    box-shadow: 0 16px 40px rgba(143, 107, 255, 0.32);
+}
+
+.registration-code-modal__button--secondary {
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+}
+
+.registration-code-modal__status {
+    min-height: 1.4rem;
+    margin: 0.95rem 0 0;
+    color: var(--text-soft);
+    font-size: 0.92rem;
+}
+
+.registration-code-modal__button:hover,
+.registration-code-modal__close:hover {
+    transform: translateY(-1px);
+}
+
+.registration-code-modal__button:focus-visible,
+.registration-code-modal__close:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+}
+
+@keyframes registrationModalIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@media (max-width: 640px) {
+    .registration-code-modal__panel {
+        padding: 1.6rem 1.15rem 1.3rem;
+        border-radius: 20px;
+    }
+
+    .registration-code-modal__code {
+        font-size: 1.2rem;
+        letter-spacing: 0.08em;
+    }
+}
+
 /* Header */
 .header {
     position: sticky;
