@@ -2308,6 +2308,124 @@ app.get('/api/files/:fileId', async (req, res) => {
   }
 });
 
+// ── Public Testimonials ──────────────────────────────────────────────────────
+
+function sanitizeTestimonial(record) {
+  if (!record) return null;
+  return {
+    id: sanitizeText(record.id),
+    fullName: sanitizeText(record.fullName),
+    location: sanitizeText(record.location),
+    program: sanitizeText(record.program),
+    rating: Math.min(5, Math.max(1, Number(record.rating) || 5)),
+    message: sanitizeText(record.message),
+    status: sanitizeText(record.status || 'pending'),
+    submittedAt: record.submittedAt || null
+  };
+}
+
+function validateTestimonialPayload(body) {
+  const payload = {
+    fullName: sanitizeText(body.fullName),
+    location: sanitizeText(body.location),
+    program: sanitizeText(body.program),
+    rating: Math.min(5, Math.max(1, parseInt(String(body.rating || '5'), 10) || 5)),
+    message: sanitizeText(body.message)
+  };
+
+  if (!isNonEmptyString(payload.fullName) || payload.fullName.length < 2) {
+    return { error: 'Full name must be at least 2 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.message) || payload.message.length < 15) {
+    return { error: 'Your review must be at least 15 characters.' };
+  }
+
+  if (payload.message.length > 600) {
+    return { error: 'Your review must be 600 characters or fewer.' };
+  }
+
+  return { payload };
+}
+
+app.get('/api/testimonials', async (_req, res) => {
+  const all = await readRecords('testimonials');
+  const items = sortRecordsDescending(
+    all.map((item) => sanitizeTestimonial(item)).filter((item) => item && item.status === 'approved')
+  );
+  return res.json({ items, total: items.length });
+});
+
+app.post('/api/testimonials', async (req, res) => {
+  const { error, payload } = validateTestimonialPayload(req.body || {});
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const record = {
+    id: `testimonial_${Date.now()}`,
+    submittedAt: new Date().toISOString(),
+    status: 'pending',
+    ...payload
+  };
+
+  await appendRecord('testimonials', record);
+  return res.status(201).json({
+    message: 'Thank you! Your testimonial has been submitted and is under review.'
+  });
+});
+
+// ── Admin: Testimonials ──────────────────────────────────────────────────────
+
+app.get('/api/admin/testimonials', requireAdminAuth, async (_req, res) => {
+  const all = await readRecords('testimonials');
+  const items = sortRecordsDescending(
+    all.map((item) => sanitizeTestimonial(item)).filter(Boolean)
+  );
+  return res.json({
+    items,
+    total: items.length,
+    pending: items.filter((i) => i.status === 'pending').length,
+    approved: items.filter((i) => i.status === 'approved').length
+  });
+});
+
+app.put('/api/admin/testimonials/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Testimonial id is required.' });
+
+  const status = sanitizeText(req.body.status);
+  if (!['pending', 'approved', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be pending, approved, or rejected.' });
+  }
+
+  const db = await getDb();
+  const updatedItem = await db.collection('testimonials').findOneAndUpdate(
+    { id },
+    { $set: { status } },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) {
+    return res.status(404).json({ error: 'Testimonial not found.' });
+  }
+
+  return res.json({ message: `Testimonial ${status}.`, item: sanitizeTestimonial(updatedItem) });
+});
+
+app.delete('/api/admin/testimonials/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Testimonial id is required.' });
+
+  const db = await getDb();
+  const result = await db.collection('testimonials').deleteOne({ id });
+  if (!result.deletedCount) {
+    return res.status(404).json({ error: 'Testimonial not found.' });
+  }
+
+  return res.json({ message: 'Testimonial deleted.' });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });

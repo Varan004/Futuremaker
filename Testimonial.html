@@ -122,8 +122,250 @@
         </div>
     </div>
 
+    <!-- ── Community Reviews ──────────────────────────────────────── -->
+    <section class="community-reviews-section" id="communityReviews">
+        <div class="cr-shell">
+            <header class="cr-header">
+                <p class="cr-kicker">Community Reviews</p>
+                <h2>What Our Students Say</h2>
+                <p class="cr-subtext">Approved words from our growing community of learners.</p>
+            </header>
+            <div class="cr-grid" id="crGrid">
+                <div class="cr-loading" id="crLoading">
+                    <span class="cr-spinner"></span>
+                    <span>Loading reviews…</span>
+                </div>
+            </div>
+            <p class="cr-empty hidden" id="crEmpty">No community reviews yet. Be the first to share yours!</p>
+        </div>
+    </section>
+
+    <!-- ── Share Your Story ───────────────────────────────────────── -->
+    <section class="share-story-section" id="shareStory">
+        <div class="ss-shell">
+            <header class="ss-header">
+                <p class="ss-kicker">Share Your Story</p>
+                <h2>Leave a Review</h2>
+                <p class="ss-subtext">Completed a program or attended a session? Tell us about your experience — your story inspires others.</p>
+            </header>
+
+            <form class="ss-form" id="testimonialForm" novalidate>
+                <div class="ss-form-row">
+                    <div class="ss-field">
+                        <label for="tf-name">Full Name <span aria-hidden="true">*</span></label>
+                        <input type="text" id="tf-name" name="fullName" placeholder="e.g. Fathima Nazreen" autocomplete="name" required maxlength="80">
+                    </div>
+                    <div class="ss-field">
+                        <label for="tf-location">Location <span class="ss-optional">(optional)</span></label>
+                        <input type="text" id="tf-location" name="location" placeholder="e.g. Trincomalee" autocomplete="off" maxlength="60">
+                    </div>
+                </div>
+
+                <div class="ss-field">
+                    <label for="tf-program">Program Attended <span class="ss-optional">(optional)</span></label>
+                    <select id="tf-program" name="program">
+                        <option value="">Select a program…</option>
+                        <option value="Orientation Course">Orientation Course</option>
+                        <option value="Future in AI">Future in AI</option>
+                        <option value="Career Guidance">Career Guidance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="ss-field">
+                    <label>Your Rating <span aria-hidden="true">*</span></label>
+                    <div class="ss-stars" role="radiogroup" aria-label="Rating" id="starRating">
+                        <button type="button" class="ss-star" data-value="1" aria-label="1 star">★</button>
+                        <button type="button" class="ss-star" data-value="2" aria-label="2 stars">★</button>
+                        <button type="button" class="ss-star" data-value="3" aria-label="3 stars">★</button>
+                        <button type="button" class="ss-star" data-value="4" aria-label="4 stars">★</button>
+                        <button type="button" class="ss-star" data-value="5" aria-label="5 stars">★</button>
+                    </div>
+                    <input type="hidden" name="rating" id="tf-rating" value="5">
+                </div>
+
+                <div class="ss-field">
+                    <label for="tf-message">Your Review <span aria-hidden="true">*</span></label>
+                    <textarea id="tf-message" name="message" rows="4" placeholder="Share your experience with FutureMakers in at least 15 characters…" required maxlength="600"></textarea>
+                    <span class="ss-charcount"><span id="tf-charcount">0</span> / 600</span>
+                </div>
+
+                <div class="ss-form-footer">
+                    <p class="ss-note">Reviews are moderated and published after approval.</p>
+                    <button type="submit" class="ss-submit" id="testimonialSubmitBtn">
+                        <span class="ss-submit-label">Submit Review</span>
+                        <span class="ss-submit-spinner hidden" aria-hidden="true"></span>
+                    </button>
+                </div>
+
+                <div class="ss-alert hidden" id="testimonialAlert" role="alert"></div>
+            </form>
+        </div>
+    </section>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="futuremaker.js"></script>
+    <script>
+    // ── Star Rating ─────────────────────────────────────────────────────────
+    (function () {
+        const stars = document.querySelectorAll('.ss-star');
+        const ratingInput = document.getElementById('tf-rating');
+        let currentRating = 5;
+
+        function setRating(value) {
+            currentRating = value;
+            ratingInput.value = value;
+            stars.forEach((s) => {
+                const v = parseInt(s.dataset.value, 10);
+                s.classList.toggle('active', v <= value);
+                s.setAttribute('aria-pressed', v <= value ? 'true' : 'false');
+            });
+        }
+
+        setRating(5);
+
+        stars.forEach((s) => {
+            s.addEventListener('click', () => setRating(parseInt(s.dataset.value, 10)));
+            s.addEventListener('mouseenter', () => {
+                const v = parseInt(s.dataset.value, 10);
+                stars.forEach((st) => st.classList.toggle('hover', parseInt(st.dataset.value, 10) <= v));
+            });
+        });
+
+        document.getElementById('starRating').addEventListener('mouseleave', () => {
+            stars.forEach((st) => st.classList.remove('hover'));
+        });
+    })();
+
+    // ── Character counter ───────────────────────────────────────────────────
+    (function () {
+        const textarea = document.getElementById('tf-message');
+        const counter = document.getElementById('tf-charcount');
+        textarea.addEventListener('input', () => {
+            counter.textContent = textarea.value.length;
+        });
+    })();
+
+    // ── Load community reviews ──────────────────────────────────────────────
+    (function () {
+        const grid = document.getElementById('crGrid');
+        const loading = document.getElementById('crLoading');
+        const empty = document.getElementById('crEmpty');
+
+        function renderStars(rating) {
+            return Array.from({ length: 5 }, (_, i) =>
+                `<span class="cr-star ${i < rating ? 'filled' : ''}" aria-hidden="true">★</span>`
+            ).join('');
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderCard(item) {
+            const initials = escapeHtml(item.fullName || '?')
+                .split(' ')
+                .slice(0, 2)
+                .map((w) => w[0])
+                .join('')
+                .toUpperCase();
+            const meta = [item.program, item.location].filter(Boolean).map(escapeHtml).join(' · ');
+            const date = item.submittedAt
+                ? new Date(item.submittedAt).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+                : '';
+            return `
+            <article class="cr-card">
+                <div class="cr-card-top">
+                    <div class="cr-avatar">${initials}</div>
+                    <div class="cr-card-info">
+                        <strong class="cr-card-name">${escapeHtml(item.fullName)}</strong>
+                        ${meta ? `<span class="cr-card-meta">${meta}</span>` : ''}
+                    </div>
+                    <span class="cr-card-date">${date}</span>
+                </div>
+                <div class="cr-card-rating" aria-label="Rating: ${item.rating} out of 5">${renderStars(item.rating)}</div>
+                <p class="cr-card-message">${escapeHtml(item.message)}</p>
+            </article>`;
+        }
+
+        fetch('/api/testimonials')
+            .then((r) => r.json())
+            .then((data) => {
+                loading.remove();
+                if (!data.items || !data.items.length) {
+                    empty.classList.remove('hidden');
+                    return;
+                }
+                grid.innerHTML = data.items.map(renderCard).join('');
+            })
+            .catch(() => {
+                loading.remove();
+                empty.classList.remove('hidden');
+            });
+    })();
+
+    // ── Testimonial form submit ─────────────────────────────────────────────
+    (function () {
+        const form = document.getElementById('testimonialForm');
+        const btn = document.getElementById('testimonialSubmitBtn');
+        const alert = document.getElementById('testimonialAlert');
+        const label = btn.querySelector('.ss-submit-label');
+        const spinner = btn.querySelector('.ss-submit-spinner');
+
+        function showAlert(message, type) {
+            alert.textContent = message;
+            alert.className = `ss-alert ss-alert-${type}`;
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert.className = 'ss-alert hidden';
+
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            if (!data.fullName || data.fullName.trim().length < 2) {
+                showAlert('Please enter your full name.', 'error');
+                return;
+            }
+            if (!data.message || data.message.trim().length < 15) {
+                showAlert('Your review must be at least 15 characters.', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            label.classList.add('hidden');
+            spinner.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/testimonials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+
+                if (!res.ok) {
+                    showAlert(json.error || 'Something went wrong. Please try again.', 'error');
+                } else {
+                    showAlert(json.message, 'success');
+                    form.reset();
+                    document.getElementById('tf-charcount').textContent = '0';
+                    // Reset stars to 5
+                    document.querySelector('[data-value="5"]').click();
+                }
+            } catch {
+                showAlert('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                label.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
