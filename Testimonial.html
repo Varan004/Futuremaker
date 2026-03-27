@@ -367,7 +367,7 @@
                     }
                 }
             } catch {
-                showAlert('Network error. Please check your connection and try again.', 'error');
+                // Silent fail: do not show any error message
             } finally {
                 btn.disabled = false;
                 label.classList.remove('hidden');
