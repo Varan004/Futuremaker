@@ -2454,17 +2454,12 @@ app.post('/api/testimonials', async (req, res) => {
 
 // ── Admin: Testimonials ──────────────────────────────────────────────────────
 
-app.get('/api/admin/testimonials', requireAdminAuth, async (_req, res) => {
+app.get('/api/testimonials', async (_req, res) => {
   const all = await readRecords('testimonials');
   const items = sortRecordsDescending(
-    all.map((item) => sanitizeTestimonial(item)).filter(Boolean)
+    all.map((item) => sanitizeTestimonial(item)).filter((item) => item && item.status === 'approved')
   );
-  return res.json({
-    items,
-    total: items.length,
-    pending: items.filter((i) => i.status === 'pending').length,
-    approved: items.filter((i) => i.status === 'approved').length
-  });
+  return res.json({ items, total: items.length });
 });
 
 app.put('/api/admin/testimonials/:id', requireAdminAuth, async (req, res) => {
