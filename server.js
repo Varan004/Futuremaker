@@ -1350,13 +1350,12 @@ app.post('/api/registrations', async (req, res) => {
   });
 });
 
+
 app.get('/api/testimonials', async (_req, res) => {
   const testimonials = await readRecords('testimonials');
   const visibleItems = sortRecordsDescending(
-    testimonials
-      .filter((item) => item && item.isApproved)
+    testimonials.filter((item) => item)
   );
-
   return res.json({
     items: visibleItems,
     total: visibleItems.length
@@ -1372,14 +1371,13 @@ app.post('/api/testimonials', async (req, res) => {
   const record = {
     id: `testimonial_${Date.now()}`,
     submittedAt: new Date().toISOString(),
-    status: 'pending',
     ...payload
   };
 
   await appendRecord('testimonials', record);
 
   return res.status(201).json({
-    message: 'Thank you! Your testimonial has been submitted and is under review.'
+    message: 'Thank you! Your testimonial has been submitted.'
   });
 });
 

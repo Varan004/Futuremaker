@@ -258,7 +258,7 @@
       setText('teamFocusArea', user.focusArea);
 
       setText('teamAssignedLeads', metrics.assignedLeads || 0);
-      setText('teamPendingActions', metrics.pendingActions || 0);
+      // setText('teamPendingActions', metrics.pendingActions || 0); // Removed: no more pending actions metric
       setText('teamCompletedFollowUps', metrics.completedFollowUps || 0);
       setText('teamPriorityLevel', metrics.priorityLevel || '-');
 
