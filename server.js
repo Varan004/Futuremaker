@@ -1376,8 +1376,10 @@ app.post('/api/testimonials', async (req, res) => {
 
   await appendRecord('testimonials', record);
 
+  // Immediately return the new testimonial so the frontend can reflect it
   return res.status(201).json({
-    message: 'Thank you! Your testimonial has been submitted.'
+    message: 'Thank you! Your testimonial has been submitted.',
+    item: record
   });
 });
 

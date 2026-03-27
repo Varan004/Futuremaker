@@ -356,6 +356,15 @@
                     document.getElementById('tf-charcount').textContent = '0';
                     // Reset stars to 5
                     document.querySelector('[data-value="5"]').click();
+                    // Instantly add the new testimonial to the grid
+                    if (json.item) {
+                        const grid = document.getElementById('crGrid');
+                        const empty = document.getElementById('crEmpty');
+                        if (empty) empty.classList.add('hidden');
+                        if (grid) {
+                            grid.innerHTML = renderCard(json.item) + grid.innerHTML;
+                        }
+                    }
                 }
             } catch {
                 showAlert('Network error. Please check your connection and try again.', 'error');
