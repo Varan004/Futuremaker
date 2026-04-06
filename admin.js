@@ -556,6 +556,7 @@
       if (featuredEl) featuredEl.checked = Boolean(item.isFeatured);
 
       clearOpportunityFormStatus();
+      clearOppImageUploadState();
       if (opportunityModal) opportunityModal.show();
    }
 
@@ -636,6 +637,66 @@
    const addOpportunityBtn = document.getElementById('adminAddOpportunityBtn');
    if (addOpportunityBtn) {
       addOpportunityBtn.addEventListener('click', openAddOpportunityModal);
+      const oppImageUploadBtn = document.getElementById('adminOppImageUploadBtn');
+      if (oppImageUploadBtn) {
+         oppImageUploadBtn.addEventListener('click', async function () {
+            const fileInput = document.getElementById('adminOppImageFile');
+            const urlInput = document.getElementById('adminOppImageUrl');
+            const statusEl = document.getElementById('adminOppImageUploadStatus');
+
+            if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+               if (statusEl) { statusEl.textContent = 'Select an image file first.'; statusEl.className = 'admin-status is-error'; }
+               return;
+            }
+
+            const file = fileInput.files[0];
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+               if (statusEl) { statusEl.textContent = 'Only JPEG, PNG, GIF, or WebP images are allowed.'; statusEl.className = 'admin-status is-error'; }
+               return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            oppImageUploadBtn.disabled = true;
+            if (statusEl) { statusEl.textContent = 'Uploading…'; statusEl.className = 'admin-status'; }
+
+            try {
+               let response;
+               try {
+                  response = await fetch(resolveApiUrl('/api/admin/opportunity-upload'), {
+                     method: 'POST',
+                     credentials: 'same-origin',
+                     body: formData
+                  });
+               } catch (_networkError) {
+                  throw new Error('Unable to reach backend API.');
+               }
+
+               let result = {};
+               try { result = await response.json(); } catch (_) { result = {}; }
+
+               if (!response.ok) {
+                  if (response.status === 401) throw new Error('Admin session expired. Log in again and retry.');
+                  throw new Error(result.error || 'Upload failed.');
+               }
+
+               if (urlInput) urlInput.value = result.url || '';
+               if (fileInput) fileInput.value = '';
+               const kb = Math.round((result.size || 0) / 1024);
+               if (statusEl) {
+                  statusEl.textContent = `Uploaded: ${result.filename} (${kb} KB). URL filled in below.`;
+                  statusEl.className = 'admin-status is-success';
+               }
+            } catch (error) {
+               if (statusEl) { statusEl.textContent = error.message || 'Upload failed.'; statusEl.className = 'admin-status is-error'; }
+            } finally {
+               oppImageUploadBtn.disabled = false;
+            }
+         });
+      }
+
    }
 
    const saveOpportunityBtn = document.getElementById('adminOpportunitySaveBtn');
