@@ -31,6 +31,14 @@
    const testimonialsSection = document.getElementById('adminTestimonialsSection');
    const testimonialsPanel = document.getElementById('adminTestimonialsPanel');
    const testimonialsToggleBtn = document.getElementById('adminTestimonialsToggleBtn');
+   const opportunityTableBody = document.getElementById('opportunityTableBody');
+   const opportunityApplicationTableBody = document.getElementById('opportunityApplicationTableBody');
+   const opportunitiesSection = document.getElementById('adminOpportunitiesSection');
+   const opportunitiesPanel = document.getElementById('adminOpportunitiesPanel');
+   const opportunitiesToggleBtn = document.getElementById('adminOpportunitiesToggleBtn');
+   const opportunityApplicationsSection = document.getElementById('adminOpportunityApplicationsSection');
+   const opportunityApplicationsPanel = document.getElementById('adminOpportunityApplicationsPanel');
+   const opportunityApplicationsToggleBtn = document.getElementById('adminOpportunityApplicationsToggleBtn');
 
    let teamUserModal = null;
    let teamUserResetModal = null;
@@ -38,12 +46,16 @@
    let lmsUpdateModal = null;
    let lmsCourseModal = null;
    let lmsResourceModal = null;
+   let opportunityModal = null;
+   let opportunityApplicationModal = null;
    let currentEditUsername = null;
    let currentResetUsername = null;
    let currentDeleteUsername = null;
    let currentLmsUpdateId = null;
    let currentLmsCourseId = null;
    let currentLmsResourceId = null;
+   let currentEditOpportunityId = null;
+   let currentApplicationId = null;
 
    if (!authCard || !dashboard || !loginForm || !loginStatusElement || !statusElement || !contactTableBody || !registrationTableBody) {
       return;
@@ -232,6 +244,22 @@
       }
    }
 
+   function setOpportunitiesPanelState(isOpen) {
+      if (!opportunitiesPanel || !opportunitiesToggleBtn) return;
+      opportunitiesPanel.hidden = !isOpen;
+      opportunitiesToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      opportunitiesToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+      if (opportunitiesSection) opportunitiesSection.classList.toggle('is-collapsed', !isOpen);
+   }
+
+   function setOpportunityApplicationsPanelState(isOpen) {
+      if (!opportunityApplicationsPanel || !opportunityApplicationsToggleBtn) return;
+      opportunityApplicationsPanel.hidden = !isOpen;
+      opportunityApplicationsToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      opportunityApplicationsToggleBtn.textContent = isOpen ? 'Collapse' : 'Open';
+      if (opportunityApplicationsSection) opportunityApplicationsSection.classList.toggle('is-collapsed', !isOpen);
+   }
+
    function renderContacts(items) {
       const meta = document.getElementById('adminContactMeta');
       if (meta) {
@@ -312,7 +340,7 @@
          }
       }
 
-      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses(), loadLmsResources(), loadTestimonials()]);
+      await Promise.all([loadTeamUsers(), loadLmsUpdates(), loadLmsCourses(), loadLmsResources(), loadTestimonials(), loadOpportunities(), loadOpportunityApplications()]);
    }
 
    async function checkAdminSession() {
@@ -396,6 +424,8 @@
             if (lmsResourceTableBody) renderEmptyRow(lmsResourceTableBody, 6, 'Login required.');
             if (applicantAccessTableBody) renderEmptyRow(applicantAccessTableBody, 5, 'Login required.');
             if (testimonialsTableBody) renderEmptyRow(testimonialsTableBody, 7, 'Login required.');
+            if (opportunityTableBody) renderEmptyRow(opportunityTableBody, 7, 'Login required.');
+            if (opportunityApplicationTableBody) renderEmptyRow(opportunityApplicationTableBody, 8, 'Login required.');
          }
       });
    }
@@ -448,7 +478,332 @@
       setTestimonialsPanelState(true);
    }
 
+   if (opportunitiesToggleBtn) {
+      opportunitiesToggleBtn.addEventListener('click', function () {
+         const isOpen = opportunitiesToggleBtn.getAttribute('aria-expanded') === 'true';
+         setOpportunitiesPanelState(!isOpen);
+      });
+      setOpportunitiesPanelState(true);
+   }
+
+   if (opportunityApplicationsToggleBtn) {
+      opportunityApplicationsToggleBtn.addEventListener('click', function () {
+         const isOpen = opportunityApplicationsToggleBtn.getAttribute('aria-expanded') === 'true';
+         setOpportunityApplicationsPanelState(!isOpen);
+      });
+      setOpportunityApplicationsPanelState(true);
+   }
+
    // ─── Team User Management ─────────────────────────────────────
+
+   // ─── Opportunities Management ─────────────────────────────────
+
+   function clearOpportunityFormStatus() {
+      const el = document.getElementById('adminOpportunityFormStatus');
+      if (el) { el.textContent = ''; el.className = 'admin-status'; }
+   }
+
+   function setOpportunityFormStatus(msg, isError) {
+      const el = document.getElementById('adminOpportunityFormStatus');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.toggle('is-error', Boolean(isError));
+      el.classList.toggle('is-success', !isError);
+   }
+
+   function openAddOpportunityModal() {
+      currentEditOpportunityId = null;
+      const form = document.getElementById('adminOpportunityForm');
+      const label = document.getElementById('opportunityModalLabel');
+      if (form) form.reset();
+      if (label) label.textContent = 'Add Opportunity';
+      const statusEl = document.getElementById('adminOppStatus');
+      if (statusEl) statusEl.value = 'open';
+      clearOpportunityFormStatus();
+      if (opportunityModal) opportunityModal.show();
+   }
+
+   function openEditOpportunityModal(item) {
+      currentEditOpportunityId = item.id;
+      const label = document.getElementById('opportunityModalLabel');
+      if (label) label.textContent = 'Edit: ' + item.title;
+
+      const fields = {
+         adminOppTitle: item.title,
+         adminOppDescription: item.description,
+         adminOppType: item.type,
+         adminOppDeadline: item.deadline,
+         adminOppLocation: item.location,
+         adminOppRequirements: item.requirements,
+         adminOppImageUrl: item.imageUrl
+      };
+      Object.keys(fields).forEach(function (id) {
+         const el = document.getElementById(id);
+         if (el) el.value = fields[id] || '';
+      });
+
+      const statusEl = document.getElementById('adminOppStatus');
+      if (statusEl) statusEl.value = item.status || 'open';
+      const featuredEl = document.getElementById('adminOppFeatured');
+      if (featuredEl) featuredEl.checked = Boolean(item.isFeatured);
+
+      clearOpportunityFormStatus();
+      if (opportunityModal) opportunityModal.show();
+   }
+
+   function renderOpportunities(items) {
+      const meta = document.getElementById('adminOpportunityMeta');
+      if (meta) meta.textContent = `${items.length} opportunit${items.length === 1 ? 'y' : 'ies'}`;
+      setSummaryText('adminOpportunityCount', items.length);
+      setSummaryText('adminOpportunityOpenCount', items.filter(function (i) { return i.status === 'open'; }).length);
+
+      if (!opportunityTableBody) return;
+
+      if (!items.length) {
+         renderEmptyRow(opportunityTableBody, 7, 'No opportunities yet.');
+         return;
+      }
+
+      opportunityTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.title));
+         row.appendChild(createCell(item.type));
+
+         const statusCell = document.createElement('td');
+         statusCell.textContent = item.status;
+         statusCell.style.color = item.status === 'open' ? '#4ade80' : '#f87171';
+         statusCell.style.fontWeight = '600';
+         row.appendChild(statusCell);
+
+         row.appendChild(createCell(item.deadline || '-'));
+         row.appendChild(createCell(item.location || '-'));
+         row.appendChild(createCell(item.isFeatured ? 'Yes' : 'No'));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+
+         const editBtn = document.createElement('button');
+         editBtn.type = 'button';
+         editBtn.textContent = 'Edit';
+         editBtn.className = 'admin-outline-btn';
+         editBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;margin-right:.35rem;cursor:pointer;';
+         editBtn.addEventListener('click', function () { openEditOpportunityModal(item); });
+
+         const deleteBtn = document.createElement('button');
+         deleteBtn.type = 'button';
+         deleteBtn.textContent = 'Delete';
+         deleteBtn.className = 'admin-outline-btn admin-delete-btn';
+         deleteBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         deleteBtn.addEventListener('click', async function () {
+            if (!window.confirm('Delete this opportunity? This cannot be undone.')) return;
+            deleteBtn.disabled = true;
+            try {
+               await requestJson('/api/admin/opportunities/' + item.id, { method: 'DELETE' }, 'Unable to delete opportunity.');
+               await loadOpportunities();
+            } catch (error) {
+               setStatus(error.message || 'Unable to delete opportunity.', true);
+            } finally {
+               deleteBtn.disabled = false;
+            }
+         });
+
+         actionCell.appendChild(editBtn);
+         actionCell.appendChild(deleteBtn);
+         row.appendChild(actionCell);
+         opportunityTableBody.appendChild(row);
+      });
+   }
+
+   async function loadOpportunities() {
+      if (!opportunityTableBody) return;
+      try {
+         const result = await requestJson('/api/admin/opportunities', {}, 'Unable to load opportunities.');
+         renderOpportunities(result.items || []);
+      } catch (error) {
+         renderEmptyRow(opportunityTableBody, 7, error.message || 'Unable to load opportunities.');
+      }
+   }
+
+   const addOpportunityBtn = document.getElementById('adminAddOpportunityBtn');
+   if (addOpportunityBtn) {
+      addOpportunityBtn.addEventListener('click', openAddOpportunityModal);
+   }
+
+   const saveOpportunityBtn = document.getElementById('adminOpportunitySaveBtn');
+   if (saveOpportunityBtn) {
+      saveOpportunityBtn.addEventListener('click', async function () {
+         saveOpportunityBtn.disabled = true;
+         setOpportunityFormStatus('Saving…', false);
+
+         function val(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+         }
+
+         const body = {
+            title: val('adminOppTitle'),
+            description: val('adminOppDescription'),
+            type: val('adminOppType') || 'opportunity',
+            status: val('adminOppStatus') || 'open',
+            deadline: val('adminOppDeadline'),
+            location: val('adminOppLocation'),
+            requirements: val('adminOppRequirements'),
+            imageUrl: val('adminOppImageUrl'),
+            isFeatured: (function () { const el = document.getElementById('adminOppFeatured'); return el ? el.checked : false; })()
+         };
+
+         const isEdit = Boolean(currentEditOpportunityId);
+         const url = isEdit ? '/api/admin/opportunities/' + currentEditOpportunityId : '/api/admin/opportunities';
+         const method = isEdit ? 'PUT' : 'POST';
+
+         try {
+            await requestJson(url, {
+               method: method,
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(body)
+            }, isEdit ? 'Unable to update opportunity.' : 'Unable to create opportunity.');
+
+            if (opportunityModal) opportunityModal.hide();
+            await loadOpportunities();
+            setStatus('Opportunity saved successfully.', false);
+         } catch (error) {
+            setOpportunityFormStatus(error.message || 'Unable to save opportunity.', true);
+         } finally {
+            saveOpportunityBtn.disabled = false;
+         }
+      });
+   }
+
+   // ─── Opportunity Applications ─────────────────────────────────
+
+   function openApplicationDetailModal(item) {
+      currentApplicationId = item.id;
+      const body = document.getElementById('opportunityApplicationModalBody');
+      if (body) {
+         body.innerHTML = '';
+
+         function addRow(label, value) {
+            const p = document.createElement('p');
+            p.style.margin = '0 0 .5rem';
+            p.innerHTML = `<strong style="color:#c4abff;min-width:120px;display:inline-block;">${label}:</strong> ${value || '-'}`;
+            body.appendChild(p);
+         }
+
+         addRow('Name', item.fullName);
+         addRow('Email', item.email);
+         addRow('Phone', item.phone);
+         addRow('Opportunity', item.opportunityTitle || item.opportunityId);
+         addRow('Status', item.status);
+         addRow('Submitted', item.submittedAt ? new Date(item.submittedAt).toLocaleString() : '-');
+         if (item.message) {
+            const msgWrap = document.createElement('div');
+            msgWrap.style.cssText = 'margin-top:.8rem;padding:.75rem;background:rgba(196,171,255,.07);border-radius:.5rem;border:1px solid rgba(196,171,255,.15);';
+            msgWrap.innerHTML = `<strong style="color:#c4abff;">Message:</strong><br><span style="white-space:pre-wrap;">${item.message}</span>`;
+            body.appendChild(msgWrap);
+         }
+      }
+
+      const select = document.getElementById('adminAppStatusSelect');
+      if (select) select.value = item.status || 'pending';
+
+      const saveStatusEl = document.getElementById('adminAppStatusSaveStatus');
+      if (saveStatusEl) { saveStatusEl.textContent = ''; saveStatusEl.className = 'admin-status'; }
+
+      if (opportunityApplicationModal) opportunityApplicationModal.show();
+   }
+
+   function renderOpportunityApplications(items) {
+      const meta = document.getElementById('adminOpportunityApplicationMeta');
+      const pending = items.filter(function (i) { return i.status === 'pending'; }).length;
+      if (meta) meta.textContent = `${pending} pending`;
+      setSummaryText('adminOpportunityApplicationCount', pending);
+
+      if (!opportunityApplicationTableBody) return;
+
+      if (!items.length) {
+         renderEmptyRow(opportunityApplicationTableBody, 8, 'No opportunity applications yet.');
+         return;
+      }
+
+      opportunityApplicationTableBody.innerHTML = '';
+      items.forEach(function (item) {
+         const row = document.createElement('tr');
+         row.appendChild(createCell(item.fullName));
+         row.appendChild(createCell(item.email));
+         row.appendChild(createCell(item.phone));
+         row.appendChild(createCell(item.opportunityTitle || item.opportunityId));
+         const msgCell = document.createElement('td');
+         const msg = item.message || '';
+         msgCell.textContent = msg.length > 40 ? msg.substring(0, 40) + '…' : msg || '-';
+         msgCell.style.maxWidth = '160px';
+         msgCell.style.overflow = 'hidden';
+         msgCell.style.textOverflow = 'ellipsis';
+         msgCell.style.whiteSpace = 'nowrap';
+         row.appendChild(msgCell);
+
+         const statusCell = document.createElement('td');
+         statusCell.textContent = item.status;
+         const statusColors = { pending: '#facc15', reviewed: '#60a5fa', accepted: '#4ade80', rejected: '#f87171' };
+         statusCell.style.color = statusColors[item.status] || 'inherit';
+         statusCell.style.fontWeight = '600';
+         row.appendChild(statusCell);
+
+         row.appendChild(createCell(formatDate(item.submittedAt)));
+
+         const actionCell = document.createElement('td');
+         actionCell.style.whiteSpace = 'nowrap';
+         const viewBtn = document.createElement('button');
+         viewBtn.type = 'button';
+         viewBtn.textContent = 'View';
+         viewBtn.className = 'admin-outline-btn';
+         viewBtn.style.cssText = 'padding:.26rem .7rem;font-size:.78rem;cursor:pointer;';
+         viewBtn.addEventListener('click', function () { openApplicationDetailModal(item); });
+         actionCell.appendChild(viewBtn);
+         row.appendChild(actionCell);
+         opportunityApplicationTableBody.appendChild(row);
+      });
+   }
+
+   async function loadOpportunityApplications() {
+      if (!opportunityApplicationTableBody) return;
+      try {
+         const result = await requestJson('/api/admin/opportunity-applications', {}, 'Unable to load opportunity applications.');
+         renderOpportunityApplications(result.items || []);
+      } catch (error) {
+         renderEmptyRow(opportunityApplicationTableBody, 8, error.message || 'Unable to load applications.');
+      }
+   }
+
+   const appStatusSaveBtn = document.getElementById('adminAppStatusSaveBtn');
+   if (appStatusSaveBtn) {
+      appStatusSaveBtn.addEventListener('click', async function () {
+         if (!currentApplicationId) return;
+         appStatusSaveBtn.disabled = true;
+         const select = document.getElementById('adminAppStatusSelect');
+         const saveStatusEl = document.getElementById('adminAppStatusSaveStatus');
+         const newStatus = select ? select.value : 'pending';
+
+         if (saveStatusEl) { saveStatusEl.textContent = 'Saving…'; saveStatusEl.className = 'admin-status'; }
+
+         try {
+            await requestJson('/api/admin/opportunity-applications/' + currentApplicationId, {
+               method: 'PUT',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ status: newStatus })
+            }, 'Unable to update application status.');
+
+            if (saveStatusEl) { saveStatusEl.textContent = 'Status updated.'; saveStatusEl.className = 'admin-status is-success'; }
+            await loadOpportunityApplications();
+         } catch (error) {
+            if (saveStatusEl) { saveStatusEl.textContent = error.message || 'Unable to update status.'; saveStatusEl.className = 'admin-status is-error'; }
+         } finally {
+            appStatusSaveBtn.disabled = false;
+         }
+      });
+   }
+
+   // ─────────────────────────────────────────────────────────────
 
    function initTeamModals() {
       if (typeof bootstrap === 'undefined') return;
@@ -458,12 +813,16 @@
       const lmsEl = document.getElementById('lmsUpdateModal');
       const lmsCourseEl = document.getElementById('lmsCourseModal');
       const lmsResourceEl = document.getElementById('lmsResourceModal');
+      const oppEl = document.getElementById('opportunityModal');
+      const oppAppEl = document.getElementById('opportunityApplicationModal');
       if (tuEl) teamUserModal = new bootstrap.Modal(tuEl);
       if (resetEl) teamUserResetModal = new bootstrap.Modal(resetEl);
       if (delEl) teamUserDeleteModal = new bootstrap.Modal(delEl);
       if (lmsEl) lmsUpdateModal = new bootstrap.Modal(lmsEl);
       if (lmsCourseEl) lmsCourseModal = new bootstrap.Modal(lmsCourseEl);
       if (lmsResourceEl) lmsResourceModal = new bootstrap.Modal(lmsResourceEl);
+      if (oppEl) opportunityModal = new bootstrap.Modal(oppEl);
+      if (oppAppEl) opportunityApplicationModal = new bootstrap.Modal(oppAppEl);
    }
 
    function renderTeamUsers(users) {

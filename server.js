@@ -2498,6 +2498,197 @@ app.delete('/api/admin/testimonials/:id', requireAdminAuth, async (req, res) => 
   return res.json({ message: 'Testimonial deleted.' });
 });
 
+// ── Opportunities ────────────────────────────────────────────────────────────
+
+function sanitizeOpportunity(record) {
+  if (!record) return null;
+  const validStatuses = ['open', 'closed'];
+  return {
+    id: sanitizeText(record.id),
+    title: sanitizeText(record.title),
+    description: sanitizeText(record.description),
+    type: sanitizeText(record.type || 'opportunity'),
+    status: validStatuses.includes(sanitizeText(record.status)) ? sanitizeText(record.status) : 'closed',
+    deadline: sanitizeText(record.deadline || ''),
+    location: sanitizeText(record.location || ''),
+    requirements: sanitizeText(record.requirements || ''),
+    imageUrl: sanitizeText(record.imageUrl || ''),
+    isFeatured: Boolean(record.isFeatured),
+    submittedAt: record.submittedAt || null,
+    updatedAt: record.updatedAt || null
+  };
+}
+
+function validateOpportunityPayload(body) {
+  const payload = {
+    title: sanitizeText(body.title),
+    description: sanitizeText(body.description),
+    type: sanitizeText(body.type || 'opportunity'),
+    status: sanitizeText(body.status || 'open'),
+    deadline: sanitizeText(body.deadline || ''),
+    location: sanitizeText(body.location || ''),
+    requirements: sanitizeText(body.requirements || ''),
+    imageUrl: sanitizeText(body.imageUrl || ''),
+    isFeatured: Boolean(body.isFeatured)
+  };
+
+  if (!isNonEmptyString(payload.title) || payload.title.length < 3) {
+    return { error: 'Title must be at least 3 characters.' };
+  }
+
+  if (!isNonEmptyString(payload.description) || payload.description.length < 10) {
+    return { error: 'Description must be at least 10 characters.' };
+  }
+
+  if (!['open', 'closed'].includes(payload.status)) {
+    return { error: 'Status must be open or closed.' };
+  }
+
+  return { payload };
+}
+
+// Public: get all published opportunities
+app.get('/api/opportunities', async (_req, res) => {
+  const all = await readRecords('opportunities');
+  const items = sortRecordsDescending(
+    all.map((i) => sanitizeOpportunity(i)).filter((i) => i)
+  );
+  return res.json({ items, total: items.length, open: items.filter((i) => i.status === 'open').length });
+});
+
+app.get('/api/admin/opportunities', requireAdminAuth, async (_req, res) => {
+  const items = await readRecords('opportunities');
+  const sorted = sortRecordsDescending(items.map((i) => sanitizeOpportunity(i)).filter(Boolean));
+  return res.json({ items: sorted, total: sorted.length, open: sorted.filter((i) => i.status === 'open').length });
+});
+
+app.post('/api/admin/opportunities', requireAdminAuth, async (req, res) => {
+  const { error, payload } = validateOpportunityPayload(req.body || {});
+  if (error) return res.status(400).json({ error });
+
+  const now = new Date().toISOString();
+  const record = { id: `opportunity_${Date.now()}`, submittedAt: now, updatedAt: now, ...payload };
+  await appendRecord('opportunities', record);
+  return res.status(201).json({ message: 'Opportunity created.', item: sanitizeOpportunity(record) });
+});
+
+app.put('/api/admin/opportunities/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Opportunity id is required.' });
+
+  const { error, payload } = validateOpportunityPayload(req.body || {});
+  if (error) return res.status(400).json({ error });
+
+  const db = await getDb();
+  const updatedItem = await db.collection('opportunities').findOneAndUpdate(
+    { id },
+    { $set: { ...payload, updatedAt: new Date().toISOString() } },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) return res.status(404).json({ error: 'Opportunity not found.' });
+  return res.json({ message: 'Opportunity updated.', item: sanitizeOpportunity(updatedItem) });
+});
+
+app.delete('/api/admin/opportunities/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Opportunity id is required.' });
+
+  const db = await getDb();
+  const result = await db.collection('opportunities').deleteOne({ id });
+  if (!result.deletedCount) return res.status(404).json({ error: 'Opportunity not found.' });
+  return res.json({ message: 'Opportunity deleted.' });
+});
+
+// ── Opportunity Applications ──────────────────────────────────────────────────
+
+function sanitizeOpportunityApplication(record) {
+  if (!record) return null;
+  const validStatuses = ['pending', 'reviewed', 'accepted', 'rejected'];
+  return {
+    id: sanitizeText(record.id),
+    opportunityId: sanitizeText(record.opportunityId || ''),
+    opportunityTitle: sanitizeText(record.opportunityTitle || ''),
+    fullName: sanitizeText(record.fullName),
+    email: sanitizeText(record.email || ''),
+    phone: sanitizeText(record.phone || ''),
+    message: sanitizeText(record.message || ''),
+    status: validStatuses.includes(sanitizeText(record.status)) ? sanitizeText(record.status) : 'pending',
+    submittedAt: record.submittedAt || null,
+    updatedAt: record.updatedAt || null
+  };
+}
+
+function validateOpportunityApplicationPayload(body) {
+  const payload = {
+    opportunityId: sanitizeText(body.opportunityId || ''),
+    opportunityTitle: sanitizeText(body.opportunityTitle || ''),
+    fullName: sanitizeText(body.fullName),
+    email: sanitizeText(body.email || '').toLowerCase(),
+    phone: sanitizeText(body.phone || ''),
+    message: sanitizeText(body.message || '')
+  };
+
+  if (!isNonEmptyString(payload.fullName) || payload.fullName.length < 2) {
+    return { error: 'Full name must be at least 2 characters.' };
+  }
+
+  if (!isValidEmail(payload.email)) {
+    return { error: 'A valid email address is required.' };
+  }
+
+  return { payload };
+}
+
+// Public: submit opportunity application
+app.post('/api/opportunity-applications', async (req, res) => {
+  const { error, payload } = validateOpportunityApplicationPayload(req.body || {});
+  if (error) return res.status(400).json({ error });
+
+  const record = {
+    id: `opapp_${Date.now()}`,
+    submittedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: 'pending',
+    ...payload
+  };
+
+  await appendRecord('opportunityApplications', record);
+  return res.status(201).json({ message: 'Application submitted successfully.' });
+});
+
+// Admin: list all opportunity applications
+app.get('/api/admin/opportunity-applications', requireAdminAuth, async (_req, res) => {
+  const items = await readRecords('opportunityApplications');
+  const sorted = sortRecordsDescending(items.map((i) => sanitizeOpportunityApplication(i)).filter(Boolean));
+  return res.json({
+    items: sorted,
+    total: sorted.length,
+    pending: sorted.filter((i) => i.status === 'pending').length
+  });
+});
+
+// Admin: update opportunity application status
+app.put('/api/admin/opportunity-applications/:id', requireAdminAuth, async (req, res) => {
+  const id = sanitizeText(req.params.id);
+  if (!id) return res.status(400).json({ error: 'Application id is required.' });
+
+  const status = sanitizeText(req.body.status);
+  if (!['pending', 'reviewed', 'accepted', 'rejected'].includes(status)) {
+    return res.status(400).json({ error: 'Status must be pending, reviewed, accepted, or rejected.' });
+  }
+
+  const db = await getDb();
+  const updatedItem = await db.collection('opportunityApplications').findOneAndUpdate(
+    { id },
+    { $set: { status, updatedAt: new Date().toISOString() } },
+    { returnDocument: 'after', projection: { _id: 0 } }
+  );
+
+  if (!updatedItem) return res.status(404).json({ error: 'Application not found.' });
+  return res.json({ message: `Application marked as ${status}.`, item: sanitizeOpportunityApplication(updatedItem) });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
