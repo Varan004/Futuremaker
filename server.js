@@ -55,6 +55,19 @@ const lmsFileUpload = multer({
   }
 });
 
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP).'));
+    }
+  }
+});
+
 async function getDb() {
   if (_mongoDb) return _mongoDb;
   if (!MONGODB_URI) throw new Error('MONGODB_URI environment variable is required. See .env.example.');
