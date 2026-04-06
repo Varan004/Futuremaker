@@ -2340,6 +2340,80 @@ app.post('/api/admin/lms-upload', requireAdminAuth, lmsFileUpload.single('file')
   }
 });
 
+app.post('/api/admin/opportunity-upload', requireAdminAuth, imageUpload.single('file'), async (req, res, next) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file provided.' });
+  }
+
+  try {
+    const db = await getDb();
+    const bucket = new GridFSBucket(db, { bucketName: 'opportunityImages' });
+    const safeName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+    const uploadStream = bucket.openUploadStream(safeName, {
+      contentType: req.file.mimetype,
+      metadata: {
+        uploadedAt: new Date().toISOString(),
+        originalName: req.file.originalname,
+        size: req.file.size
+      }
+    });
+
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+      uploadStream.end(req.file.buffer);
+    });
+
+    const fileId = uploadStream.id.toString();
+    return res.status(201).json({
+      message: 'Image uploaded successfully.',
+      fileId,
+      url: `/api/opportunity-images/${fileId}`,
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimeType: req.file.mimetype
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+app.get('/api/opportunity-images/:fileId', async (req, res) => {
+  const fileId = sanitizeText(req.params.fileId);
+
+  if (!/^[a-f0-9]{24}$/.test(fileId)) {
+    return res.status(400).json({ error: 'Invalid file id.' });
+  }
+
+  let objectId;
+  try {
+    objectId = new ObjectId(fileId);
+  } catch {
+    return res.status(400).json({ error: 'Invalid file id.' });
+  }
+
+  const db = await getDb();
+  const bucket = new GridFSBucket(db, { bucketName: 'opportunityImages' });
+  const files = await bucket.find({ _id: objectId }).toArray();
+
+  if (!files.length) {
+    return res.status(404).json({ error: 'Image not found.' });
+  }
+
+  const file = files[0];
+  res.writeHead(200, {
+    'Content-Type': file.contentType || 'image/jpeg',
+    'Content-Length': file.length,
+    'Cache-Control': 'public, max-age=86400',
+    'Content-Disposition': `inline; filename="${encodeURIComponent(file.filename)}"`
+  });
+
+  const downloadStream = bucket.openDownloadStream(objectId);
+  downloadStream.on('error', () => { if (!res.headersSent) res.status(404).end(); });
+  downloadStream.pipe(res);
+});
+
 app.get('/api/files/:fileId', async (req, res) => {
   const fileId = sanitizeText(req.params.fileId);
 

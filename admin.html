@@ -671,9 +671,17 @@
                                 Requirements
                                 <textarea id="adminOppRequirements" rows="3" placeholder="Eligibility or requirements"></textarea>
                             </label>
+                            <div class="admin-field admin-field--full">
+                                Upload Image <em style="font-size:.78rem;opacity:.65;">(max 10 MB — JPEG, PNG, GIF, WebP)</em>
+                                <div style="display:flex;gap:.5rem;align-items:center;margin-top:.35rem;">
+                                    <input type="file" id="adminOppImageFile" accept="image/jpeg,image/png,image/gif,image/webp" style="flex:1;color:inherit;">
+                                    <button type="button" class="admin-outline-btn" id="adminOppImageUploadBtn" style="white-space:nowrap;">Upload</button>
+                                </div>
+                                <p class="admin-status" id="adminOppImageUploadStatus" aria-live="polite" style="margin-top:.35rem;font-size:.82rem;min-height:1.2em;"></p>
+                            </div>
                             <label class="admin-field admin-field--full">
-                                Image URL <em style="font-size:.78rem;opacity:.65;">(optional)</em>
-                                <input type="text" id="adminOppImageUrl" placeholder="https://... or /img/filename.jpg">
+                                Image URL <em style="font-size:.78rem;opacity:.65;">(auto-filled after upload, or paste a URL)</em>
+                                <input type="text" id="adminOppImageUrl" placeholder="https://... or upload an image above">
                             </label>
                             <label class="admin-field">
                                 <input type="checkbox" id="adminOppFeatured">

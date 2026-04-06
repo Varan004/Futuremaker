@@ -511,6 +511,13 @@
       el.classList.toggle('is-success', !isError);
    }
 
+   function clearOppImageUploadState() {
+      const fileInput = document.getElementById('adminOppImageFile');
+      const statusEl = document.getElementById('adminOppImageUploadStatus');
+      if (fileInput) fileInput.value = '';
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'admin-status'; }
+   }
+
    function openAddOpportunityModal() {
       currentEditOpportunityId = null;
       const form = document.getElementById('adminOpportunityForm');
@@ -520,6 +527,7 @@
       const statusEl = document.getElementById('adminOppStatus');
       if (statusEl) statusEl.value = 'open';
       clearOpportunityFormStatus();
+      clearOppImageUploadState();
       if (opportunityModal) opportunityModal.show();
    }
 
